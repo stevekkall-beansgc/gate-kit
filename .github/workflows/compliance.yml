@@ -1,20 +1,5 @@
 # Reusable workflow: deterministic compliance gate (docs + unit [+ e2e]).
-#
-# Phase 1 = ADVISORY. GitHub Free cannot make required checks on private
-# repos; this shows red ❌ but cannot block a merge. Binding enforcement
-# happens at `ag release --require-pr-green`.
-#
-# Caller stub (add to each Tier A/B repo as .github/workflows/gate.yml):
-#
-# name: gate
-# on: [pull_request, push]
-# jobs:
-#   compliance:
-#     uses: stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.1
-#     with:
-#       repo: beanfit-app          # manifest name of the calling repo
-#       full: false                # true also runs the e2e entrypoint
-
+# Phase 1 = ADVISORY (Free tier); binding via `ag release --require-pr-green`.
 name: compliance-gate
 on:
   workflow_call:
@@ -32,29 +17,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           path: caller
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           repository: stevekkall-beansgc/qa-kit
           path: qa-kit
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
       - name: Run compliance gate
-        id: gate
         run: |
           python3 qa-kit/bin/compliance.py --repo "${{ inputs.repo }}" \
-            $( [ "${{ inputs.full }}" = "true" ] && echo --full ) \
             --markdown | tee gate-report.md
-      - name: Attach summary + artifact
+      - name: Attach summary
         if: always()
-        run: |
-          cp gate-report.md "$GITHUB_STEP_SUMMARY" || true
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: gate-compliance
-          path: gate-report.md
-          retention-days: 30
+        run: cp gate-report.md "$GITHUB_STEP_SUMMARY" 2>/dev/null || true

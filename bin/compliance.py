@@ -16,12 +16,15 @@ gate's red ❌ becomes binding via `ag release --require-pr-green` (Phase 2).
 """
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-QA_KIT = Path(__file__).resolve().parent.parent
+# qa-kit lives beside gate-kit in ~/beans/platform; CI overrides via env.
+QA_KIT = Path(os.environ.get("QA_KIT_DIR",
+                             Path(__file__).resolve().parents[2] / "qa-kit"))
 MANIFEST = QA_KIT / "manifest.json"
 
 
