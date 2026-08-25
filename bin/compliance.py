@@ -89,6 +89,12 @@ def main():
         checks.append({"name": "docs", "ok": not problems,
                        "detail": "; ".join(problems)})
 
+        setup = repo.get("setup")
+        if isinstance(setup, dict) and setup.get("cmd"):
+            r = sh(setup["cmd"], root)
+            checks.append({"name": "setup", "ok": r["ok"], "secs": r["secs"],
+                           "detail": None if r["ok"] else r["tail"][-400:]})
+
         if unit_cmd:
             r = sh(unit_cmd, root)
             checks.append({"name": "unit", "ok": r["ok"], "secs": r["secs"],
