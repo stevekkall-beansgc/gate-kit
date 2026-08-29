@@ -14,11 +14,9 @@ manifest name and `--root caller` so the checked-out caller is tested rather
 than the developer-machine path recorded in the registry. Missing manifests,
 invalid active rows, repo roots, or required unit commands fail the gate.
 
-The workflow's `gate-kit` checkout uses `main` only while this unreleased
-repair is staged. Before release, change that ref to the new gate-kit version
-tag (for example, `v0.4`) and repoint caller stubs from `@v0.3` to the same
-tag in one release handoff. Do not publish a tag while the workflow still
-checks out `main`.
+The workflow's `gate-kit` checkout is pinned to the immutable `v0.4.0` release
+tag. Caller stubs must use an immutable semver gate-kit tag as well; do not
+publish or enable a workflow that checks out `main`.
 
 **Agents:** see [AGENTS.md](AGENTS.md). Contract: see
 `~/beans/platform/qa-kit/README.md`.

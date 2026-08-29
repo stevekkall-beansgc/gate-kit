@@ -21,12 +21,12 @@ jobs:
         with:
           path: caller
       # actions/checkout in a called workflow checks out the caller, not this
-      # repository. `main` is a pre-release staging ref; the release handoff
-      # must change it to the new gate-kit tag together with caller pins.
+      # repository. Keep this pinned to the released gate-kit tag so callers
+      # cannot silently execute moving control-plane code.
       - uses: actions/checkout@v5
         with:
           repository: stevekkall-beansgc/gate-kit
-          ref: main
+          ref: v0.4.0
           path: gate-kit
       - uses: actions/checkout@v5
         with:
