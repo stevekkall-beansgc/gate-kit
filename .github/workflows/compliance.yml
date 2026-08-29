@@ -33,12 +33,20 @@ jobs:
           repository: stevekkall-beansgc/qa-kit
           ref: v0.3.1
           path: qa-kit
+      # BeanFit App's local E2E drives the BeanFit CLI. Keep the fixture
+      # immutable so hosted CI never depends on an unpinned sibling branch.
+      - uses: actions/checkout@v5
+        with:
+          repository: stevekkall-beansgc/beanfit
+          ref: v0.1.0
+          path: beanfit
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - name: Run compliance gate
         env:
           QA_KIT_DIR: ${{ github.workspace }}/qa-kit
+          BEANFIT_SRC: ${{ github.workspace }}/beanfit/src
           GATE_REPO: ${{ inputs.repo }}
           GATE_FULL: ${{ inputs.full }}
         run: |
