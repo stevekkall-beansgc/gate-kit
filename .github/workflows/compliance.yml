@@ -20,6 +20,14 @@ jobs:
       - uses: actions/checkout@v5
         with:
           path: caller
+      # actions/checkout in a called workflow checks out the caller, not this
+      # repository. `main` is a pre-release staging ref; the release handoff
+      # must change it to the new gate-kit tag together with caller pins.
+      - uses: actions/checkout@v5
+        with:
+          repository: stevekkall-beansgc/gate-kit
+          ref: main
+          path: gate-kit
       - uses: actions/checkout@v5
         with:
           repository: stevekkall-beansgc/qa-kit
@@ -28,9 +36,17 @@ jobs:
         with:
           python-version: "3.13"
       - name: Run compliance gate
+        env:
+          QA_KIT_DIR: ${{ github.workspace }}/qa-kit
+          GATE_REPO: ${{ inputs.repo }}
+          GATE_FULL: ${{ inputs.full }}
         run: |
-          python3 qa-kit/bin/compliance.py --repo "${{ inputs.repo }}" \
-            --markdown | tee gate-report.md
+          set -o pipefail
+          gate_args=(--repo "$GATE_REPO" --root caller --markdown)
+          if [[ "$GATE_FULL" == "true" ]]; then
+            gate_args+=(--full)
+          fi
+          python3 gate-kit/bin/compliance.py "${gate_args[@]}" | tee gate-report.md
       - name: Attach summary
         if: always()
         run: cp gate-report.md "$GITHUB_STEP_SUMMARY" 2>/dev/null || true

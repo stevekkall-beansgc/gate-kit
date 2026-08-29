@@ -6,7 +6,16 @@ Deterministic PR/push compliance gates for BeanLabs repos.
 - `.github/workflows/compliance.yml` — reusable workflow (called via
   per-repo `.github/workflows/gate.yml` stubs pinned to a version tag).
 - `bin/compliance.py` — same gate locally:
-  `python3 bin/compliance.py --repo <name> [--full] [--markdown]`
+  `python3 bin/compliance.py --repo <name> [--root <checkout>] [--full] [--markdown]`
+
+The eligible fleet is explicit: manifest rows with status `active` or
+`unit-only`. CI passes the caller checkout with `--root caller`; missing
+registry infrastructure, repo roots, or required entrypoints fail closed.
+
+The reusable workflow uses `gate-kit@main` only during pre-release staging so
+the unreleased CLI and workflow stay compatible. The release handoff must
+replace that checkout ref and every caller's `@v0.3` pin with the same new
+version tag; never publish with the staging ref.
 
 ## Test commands
 - Syntax pin: `python3 -m py_compile bin/compliance.py`
