@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: stevekkall-beansgc/beanfit
-          ref: v0.1.0
+          ref: v0.1.1
           path: beanfit
       - uses: actions/setup-python@v6
         with:
