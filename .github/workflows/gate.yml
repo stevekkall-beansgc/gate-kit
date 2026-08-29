@@ -2,7 +2,7 @@ name: gate
 on: [pull_request, push]
 jobs:
   compliance:
-    uses: stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.3.2
+    uses: stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.4.0
     with:
       repo: gate-kit
       full: false
