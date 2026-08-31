@@ -26,12 +26,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: stevekkall-beansgc/gate-kit
-          ref: v0.4.2
+          ref: v0.4.4
           path: gate-kit
       - uses: actions/checkout@v5
         with:
           repository: stevekkall-beansgc/qa-kit
-          ref: v0.3.1
+          ref: v0.3.4
           path: qa-kit
       # BeanFit App's local E2E drives the BeanFit CLI. Keep the fixture
       # immutable so hosted CI never depends on an unpinned sibling branch.

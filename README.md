@@ -14,8 +14,8 @@ manifest name and `--root caller` so the checked-out caller is tested rather
 than the developer-machine path recorded in the registry. Missing manifests,
 invalid active rows, repo roots, or required unit commands fail the gate.
 
-The workflow's `gate-kit` checkout is pinned to the immutable `v0.4.0` release
-tag. Caller stubs must use an immutable semver gate-kit tag as well; do not
+The workflow's `gate-kit` checkout is pinned to the immutable `v0.4.4` release
+tag, and its QA manifest is pinned to `qa-kit v0.3.4`. Caller stubs must use an immutable semver gate-kit tag as well; do not
 publish or enable a workflow that checks out `main`.
 
 **Agents:** see [AGENTS.md](AGENTS.md). Contract: see

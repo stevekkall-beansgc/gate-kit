@@ -157,8 +157,8 @@ class TestWorkflowContract(unittest.TestCase):
         workflow = (Path(__file__).resolve().parents[1] /
                     ".github/workflows/compliance.yml").read_text()
         self.assertIn("path: gate-kit", workflow)
-        self.assertIn("ref: v0.4.2", workflow)
-        self.assertIn("ref: v0.3.1", workflow)
+        self.assertIn("ref: v0.4.4", workflow)
+        self.assertIn("ref: v0.3.4", workflow)
         self.assertIn("ref: v0.1.1", workflow)
         self.assertIn("python3 gate-kit/bin/compliance.py", workflow)
         self.assertIn("--root caller", workflow)
