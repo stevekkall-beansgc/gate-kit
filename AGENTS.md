@@ -12,13 +12,14 @@ The eligible fleet is explicit: manifest rows with status `active` or
 `unit-only`. CI passes the caller checkout with `--root caller`; missing
 registry infrastructure, repo roots, or required entrypoints fail closed.
 
-The reusable workflow uses `gate-kit@main` only during pre-release staging so
-the unreleased CLI and workflow stay compatible. The release handoff must
-replace that checkout ref and every caller's `@v0.3` pin with the same new
-version tag; never publish with the staging ref.
+The reusable workflow executes the unchanged CLI from immutable `v0.4.4`
+and the manifest from qa-kit `v0.3.7`. Workflow-only releases can keep the
+released CLI pin when its contract is unchanged. Callers pin an immutable
+workflow release; never publish a workflow that checks out `main`.
 
 ## Test commands
 - Syntax pin: `python3 -m py_compile bin/compliance.py`
+- Regression suite: `python3 -m unittest discover -s tests -v`
 - Live check: run compliance against any active manifest repo and expect
   a JSON verdict line on stdout's last line.
 

@@ -158,7 +158,7 @@ class TestWorkflowContract(unittest.TestCase):
                     ".github/workflows/compliance.yml").read_text()
         self.assertIn("path: gate-kit", workflow)
         self.assertIn("ref: v0.4.4", workflow)
-        self.assertIn("ref: v0.3.6", workflow)
+        self.assertIn("ref: v0.3.7", workflow)
         self.assertIn("ref: v0.1.1", workflow)
         self.assertIn("python3 gate-kit/bin/compliance.py", workflow)
         self.assertIn("--root caller", workflow)
@@ -170,6 +170,15 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertIn("gate_args+=(--full)", workflow)
         self.assertIn('"${gate_args[@]}"', workflow)
         self.assertNotIn("python3 qa-kit/bin/compliance.py", workflow)
+
+    def test_clawstr_runtime_is_installed_before_agency_compliance(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    ".github/workflows/compliance.yml").read_text()
+        self.assertIn("uses: actions/setup-node@", workflow)
+        self.assertIn("if: ${{ inputs.repo == 'agency' }}", workflow)
+        self.assertIn('node-version: "22"', workflow)
+        self.assertLess(workflow.index("uses: actions/setup-node@"),
+                        workflow.index("name: Run compliance gate"))
 
 
 if __name__ == "__main__":
