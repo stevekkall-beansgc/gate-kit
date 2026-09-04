@@ -13,7 +13,7 @@ The eligible fleet is explicit: manifest rows with status `active` or
 registry infrastructure, repo roots, or required entrypoints fail closed.
 
 The reusable workflow executes the unchanged CLI from immutable `v0.4.4`
-and the manifest from qa-kit `v0.3.7`. Workflow-only releases can keep the
+and the manifest from qa-kit `v0.3.8`. Workflow-only releases can keep the
 released CLI pin when its contract is unchanged. Callers pin an immutable
 workflow release; never publish a workflow that checks out `main`.
 
