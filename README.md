@@ -18,6 +18,9 @@ The workflow's `gate-kit` checkout is pinned to the immutable `v0.4.4` release
 tag, and its QA manifest is pinned to `qa-kit v0.3.8`. Caller stubs must use an immutable semver gate-kit tag as well; do not
 publish or enable a workflow that checks out `main`.
 
+The caller checkout is pinned to the reviewed pull-request head SHA or the exact
+push SHA, so the tested source is explicit rather than an implicit merge ref.
+
 For Agency only, the workflow prepares Node.js 22 before the manifest-owned
 setup. Agency then installs its locked Clawstr dependencies with lifecycle
 scripts disabled. This enables clean-checkout offline/loopback tests, not a

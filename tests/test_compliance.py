@@ -171,6 +171,12 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertIn('"${gate_args[@]}"', workflow)
         self.assertNotIn("python3 qa-kit/bin/compliance.py", workflow)
 
+    def test_caller_checkout_is_the_reviewed_commit(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    ".github/workflows/compliance.yml").read_text()
+        caller = workflow.split("path: caller", 1)[0]
+        self.assertIn("ref: ${{ github.event.pull_request.head.sha || github.sha }}", caller)
+
     def test_clawstr_runtime_is_installed_before_agency_compliance(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     ".github/workflows/compliance.yml").read_text()

@@ -19,6 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          # Test the reviewed PR head (or exact push), not a moving branch or merge ref.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: caller
       # actions/checkout in a called workflow checks out the caller, not this
       # repository. Keep this pinned to the released gate-kit tag so callers
