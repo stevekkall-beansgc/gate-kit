@@ -15,8 +15,12 @@ than the developer-machine path recorded in the registry. Missing manifests,
 invalid active rows, repo roots, or required unit commands fail the gate.
 
 The workflow's `gate-kit` checkout is pinned to the immutable `v0.4.4` release
-tag, and its QA manifest is pinned to `qa-kit v0.3.8`. Caller stubs must use an immutable semver gate-kit tag as well; do not
+tag, and its QA manifest is pinned to `qa-kit v0.4.0`. Caller stubs must use an immutable semver gate-kit tag as well; do not
 publish or enable a workflow that checks out `main`.
+
+The optional `runner` input defaults to `ubuntu-latest`. Trusted push or manual
+callers may select a repository-scoped self-hosted runner label; untrusted pull
+request workflows must keep the hosted default.
 
 The caller checkout is pinned to the reviewed pull-request head SHA or the exact
 push SHA, so the tested source is explicit rather than an implicit merge ref.
