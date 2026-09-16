@@ -20,7 +20,9 @@ publish or enable a workflow that checks out `main`.
 
 The optional `runner` input defaults to `ubuntu-latest`. Trusted push or manual
 callers may select a repository-scoped self-hosted runner label; untrusted pull
-request workflows must keep the hosted default.
+request workflows must keep the hosted default. The `beans-mac` runner uses its
+preinstalled `python3`; hosted runners continue to receive the pinned Python
+3.13 toolchain from `actions/setup-python`.
 
 The caller checkout is pinned to the reviewed pull-request head SHA or the exact
 push SHA, so the tested source is explicit rather than an implicit merge ref.

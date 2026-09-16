@@ -19,7 +19,9 @@ workflow release; never publish a workflow that checks out `main`.
 
 The optional `runner` workflow input defaults to `ubuntu-latest`. A caller may
 select a repository-scoped self-hosted runner label only from a trusted event;
-pull-request callers must retain the hosted default.
+pull-request callers must retain the hosted default. The `beans-mac` path must
+use the Mac's preinstalled `python3`; do not invoke `actions/setup-python` there
+because its macOS packages require GitHub's non-portable hosted-toolcache path.
 
 ## Test commands
 - Syntax pin: `python3 -m py_compile bin/compliance.py`

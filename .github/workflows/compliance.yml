@@ -48,8 +48,12 @@ jobs:
           ref: v0.1.1
           path: beanfit
       - uses: actions/setup-python@v6
+        if: inputs.runner != 'beans-mac'
         with:
           python-version: "3.13"
+      - name: Verify preinstalled self-hosted Python
+        if: inputs.runner == 'beans-mac'
+        run: python3 --version
       - name: Prepare Agency Clawstr test runtime
         if: ${{ inputs.repo == 'agency' }}
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
