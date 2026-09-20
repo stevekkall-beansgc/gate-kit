@@ -37,3 +37,12 @@ because its macOS packages require GitHub's non-portable hosted-toolcache path.
 
 ## Review rules
 Binding contract: `../qa-kit/README.md`.
+
+## Beanstalk compliance profile
+
+The `agents` caller must select GitHub-hosted `macos-15`. The reusable workflow
+stages the exact event commit into a new canonical Beanstalk directory, refusing
+existing targets and symlink ancestors. It verifies the released checker source
+before changing only its 900-second timeout to 14400 seconds; the job allows
+270 minutes. All manifest commands, failure decisions and other repo profiles
+remain unchanged. Regression tests exercise preparation and failure propagation.

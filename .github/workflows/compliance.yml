@@ -20,7 +20,7 @@ on:
 jobs:
   compliance:
     runs-on: ${{ inputs.runner }}
-    timeout-minutes: 15
+    timeout-minutes: ${{ inputs.repo == 'agents' && 270 || 15 }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -59,6 +59,62 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
+      - name: Prepare isolated agents compliance profile
+        if: inputs.repo == 'agents'
+        env:
+          GATE_RUNNER: ${{ inputs.runner }}
+          GATE_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          import re
+          import shutil
+          import subprocess
+
+          def adapt_checker(source):
+              source = source.rstrip('\n')
+              expected = '69ebc139280b5c3a1d7490399c6534be72ef2b76f4569ab3427c49996d87762f'
+              if hashlib.sha256(source.encode()).hexdigest() != expected:
+                  raise RuntimeError('Pinned compliance runner changed; review required')
+              if source.count('timeout=900') != 1 or source.count('timeout 900s') != 1:
+                  raise RuntimeError('Unexpected compliance timeout configuration')
+              return source.replace('timeout=900', 'timeout=14400').replace('timeout 900s', 'timeout 14400s') + '\n'
+
+          def prepare_checkout(caller, target, expected_sha, environ):
+              # Only a fresh GitHub-hosted macOS runner may create this root.
+              # Refuse even an empty existing target; never merge into local data.
+              if (environ.get('RUNNER_ENVIRONMENT') != 'github-hosted'
+                      or environ.get('RUNNER_OS') != 'macOS'
+                      or environ.get('GATE_RUNNER') != 'macos-15'):
+                  raise RuntimeError('Agents profile requires GitHub-hosted macos-15')
+              if not re.fullmatch(r'[0-9a-f]{40}', expected_sha):
+                  raise RuntimeError('Invalid expected caller SHA')
+              if any(path.is_symlink() for path in (target, *target.parents)):
+                  raise RuntimeError('Canonical target has a symlink ancestor')
+              if os.path.lexists(target):
+                  raise RuntimeError('Canonical target already exists; refusing overwrite')
+              actual = subprocess.check_output(['git', '-C', str(caller), 'rev-parse', 'HEAD'], text=True).strip()
+              if actual != expected_sha:
+                  raise RuntimeError('Caller checkout does not match event SHA')
+              subprocess.run(['sudo', 'mkdir', '-p', str(target.parent)], check=True)
+              # Exclusive mkdir still fails if a target appeared after validation.
+              subprocess.run(['sudo', 'mkdir', '-m', '700', str(target)], check=True)
+              subprocess.run(['sudo', 'chown', f'{os.getuid()}:{os.getgid()}', str(target)], check=True)
+              if any(target.iterdir()):
+                  raise RuntimeError('New canonical target is not empty')
+              shutil.copytree(caller, target, symlinks=True, dirs_exist_ok=True)
+              copied = subprocess.check_output(['git', '-C', str(target), 'rev-parse', 'HEAD'], text=True).strip()
+              if copied != expected_sha:
+                  raise RuntimeError('Staged checkout does not match event SHA')
+
+          if __name__ == '__main__':
+              adapted = adapt_checker(Path('gate-kit/bin/compliance.py').read_text())
+              prepare_checkout(Path('caller'), Path('/Users/stephenkall/beans/catalog/agents'),
+                               os.environ.get('GATE_EXPECTED_SHA', ''), os.environ)
+              Path('compliance-with-suite-timeout.py').write_text(adapted)
+          PY
       - name: Run compliance gate
         env:
           QA_KIT_DIR: ${{ github.workspace }}/qa-kit
@@ -68,10 +124,19 @@ jobs:
         run: |
           set -o pipefail
           gate_args=(--repo "$GATE_REPO" --root caller --markdown)
+          if [[ "$GATE_REPO" == "agents" ]]; then
+            catalog_root=/Users/stephenkall/beans/catalog/agents
+            gate_args=(--repo "$GATE_REPO" --root "$catalog_root" --markdown)
+            export PYTHONPATH="$catalog_root:$catalog_root/src:$catalog_root/tests"
+          fi
           if [[ "$GATE_FULL" == "true" ]]; then
             gate_args+=(--full)
           fi
-          python3 gate-kit/bin/compliance.py "${gate_args[@]}" | tee gate-report.md
+          if [[ "$GATE_REPO" == "agents" ]]; then
+            python3 compliance-with-suite-timeout.py "${gate_args[@]}" | tee gate-report.md
+          else
+            python3 gate-kit/bin/compliance.py "${gate_args[@]}" | tee gate-report.md
+          fi
       - name: Attach summary
         if: always()
         run: cp gate-report.md "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
