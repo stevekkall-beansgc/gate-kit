@@ -40,9 +40,27 @@ Binding contract: `../qa-kit/README.md`.
 
 ## Beanstalk compliance profile
 
-The `agents` caller must select GitHub-hosted `macos-15`. The reusable workflow
-stages the exact event commit into a new canonical Beanstalk directory, refusing
-existing targets and symlink ancestors. It verifies the released checker source
-before changing only its 900-second timeout to 14400 seconds; the job allows
-270 minutes. All manifest commands, failure decisions and other repo profiles
-remain unchanged. Regression tests exercise preparation and failure propagation.
+The `agents` caller selects one of two closed profiles. GitHub-hosted
+`macos-15` still stages the exact event commit into a new canonical directory,
+refusing existing targets and symlink ancestors. Self-hosted `beans-mac` accepts
+only push events for `stevekkall-beansgc/Beanstalk` on `main` or `release/*`.
+It uses preinstalled Homebrew Python and CommandLineTools Git; never accept an
+Xcode license or change system settings. Local workspaces/temp directories must
+be disjoint from the existing canonical checkout. Before any checkout step the
+workflow verifies the local event/context and installs only a temporary wrapper.
+
+The local wrapper never copies, checks out, resets or cleans canonical source.
+It holds an exclusive nonblocking flock on
+`/Users/stephenkall/beans/catalog/agents/.git/beanstalk-canonical-tests.lock`
+through all compliance setup/tests and the final source recheck. Root's other
+canonical test workflows must honor the same persistent inode; never unlink it.
+Symlink/hardlink locks, conflicts, wrong HEAD, dirty/hidden index entries, or any
+physical tracked file differing from its exact HEAD Git blob fail closed.
+Canonical and separate caller source must match the exact push SHA; source is
+verified again even when the checker fails. No persistent recovery marker or
+runtime authority is created. All writers must cooperate with this advisory lock.
+
+Both profiles verify the released checker before changing only its 900-second
+timeout to 14400 seconds; the job allows 270 minutes. Manifest docs/setup/unit/full
+commands, exit failures, check identity and other repository profiles remain
+unchanged. Local tests generate no accepted cache or model/scheduler effect.
