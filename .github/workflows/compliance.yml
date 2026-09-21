@@ -22,6 +22,202 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.repo == 'agents' && 270 || 15 }}
     steps:
+      - name: Guard trusted local agents runner before checkout
+        if: inputs.repo == 'agents' && inputs.runner == 'beans-mac'
+        env:
+          GATE_RUNNER: ${{ inputs.runner }}
+          GATE_REPO: ${{ inputs.repo }}
+          GATE_FULL: ${{ inputs.full }}
+          GATE_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GATE_EVENT_NAME: ${{ github.event_name }}
+          GATE_REPOSITORY: ${{ github.repository }}
+          GATE_EVENT_REPOSITORY: ${{ github.event.repository.full_name }}
+          GATE_REF: ${{ github.ref }}
+          GATE_PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          /opt/homebrew/bin/python3 - <<'PY'
+          import os
+          from pathlib import Path
+          wrapper = r'''"""Closed Beanstalk local compliance wrapper, embedded in proposed workflow."""
+          import contextlib
+          import fcntl
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import runpy
+          import stat
+          import subprocess
+          import sys
+
+          CANONICAL = Path('/Users/stephenkall/beans/catalog/agents')
+          GIT = '/Library/Developer/CommandLineTools/usr/bin/git'
+          REPOSITORY = 'stevekkall-beansgc/Beanstalk'
+          ADAPTED_SHA256 = '33d13dd1803674629333e898a64355efd068c76da8bc1db5e91fb2a0fb6d9741'
+
+
+          def no_symlinks(path):
+              if not path.is_absolute() or '..' in path.parts:
+                  raise RuntimeError('Ambiguous local path')
+              if any(part.is_symlink() for part in (path, *path.parents)):
+                  raise RuntimeError('Symlink in local path')
+
+
+          def validate_context(environ, canonical=CANONICAL):
+              if (environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'
+                      or environ.get('RUNNER_OS') != 'macOS'
+                      or environ.get('GATE_RUNNER') != 'beans-mac'
+                      or environ.get('GATE_REPO') != 'agents'
+                      or environ.get('GATE_EVENT_NAME') != 'push'
+                      or environ.get('GATE_REPOSITORY') != REPOSITORY
+                      or environ.get('GATE_EVENT_REPOSITORY') != REPOSITORY):
+                  raise RuntimeError('Untrusted local agents context')
+              ref = environ.get('GATE_REF', '')
+              if ref != 'refs/heads/main' and not re.fullmatch(r'refs/heads/release/[A-Za-z0-9][A-Za-z0-9._/-]*', ref):
+                  raise RuntimeError('Local agents requires main or release/* push')
+              if any(not part or part.startswith('.') or part.endswith(('.', '.lock')) for part in ref.split('/')) or '..' in ref:
+                  raise RuntimeError('Invalid release ref')
+              sha = environ.get('GATE_EXPECTED_SHA', '')
+              if not re.fullmatch(r'[0-9a-f]{40}', sha) or environ.get('GATE_PUSH_AFTER') != sha:
+                  raise RuntimeError('Event SHA mismatch')
+              if environ.get('GATE_FULL') not in {'true', 'false'}:
+                  raise RuntimeError('Invalid full-suite flag')
+              if sys.version_info < (3, 12):
+                  raise RuntimeError('Preinstalled Python >=3.12 required')
+              no_symlinks(canonical)
+              if not canonical.is_dir():
+                  raise RuntimeError('Existing canonical checkout required')
+              for name in ('GITHUB_WORKSPACE', 'RUNNER_TEMP'):
+                  path = Path(environ.get(name, ''))
+                  no_symlinks(path)
+                  if not path.is_dir() or path == canonical or canonical in path.parents or path in canonical.parents:
+                      raise RuntimeError('Runner workspace/temp overlaps canonical checkout')
+              workspace = Path(environ['GITHUB_WORKSPACE'])
+              for name in ('caller', 'gate-kit', 'qa-kit', 'beanfit'):
+                  no_symlinks(workspace / name)
+              return sha
+
+
+          def git(root, *args):
+              environ = {key: value for key, value in os.environ.items() if not key.startswith('GIT_')}
+              return subprocess.check_output(
+                  [GIT, '--no-optional-locks', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null',
+                   '-C', str(root), *args], env=environ,
+              )
+
+
+          def snapshot(root, expected_sha):
+              no_symlinks(root)
+              if not root.is_dir():
+                  raise RuntimeError('Checkout missing')
+              if Path(os.fsdecode(git(root, 'rev-parse', '--show-toplevel')).strip()) != root:
+                  raise RuntimeError('Checkout is not the exact repository root')
+              if git(root, 'rev-parse', 'HEAD').decode().strip() != expected_sha:
+                  raise RuntimeError('Checkout HEAD drift')
+              if git(root, 'status', '--porcelain=v1', '--untracked-files=no', '--ignore-submodules=none').strip():
+                  raise RuntimeError('Tracked source is not clean')
+              # Reject index shortcuts that could hide dirty tracked files from status.
+              flags = git(root, 'ls-files', '-v', '-z').split(b'\0')
+              if any(row and row[:1] != b'H' for row in flags):
+                  raise RuntimeError('Tracked index contains hidden/unsupported entries')
+              rows = []
+              paths = []
+              # Compare every physical tracked file directly to the exact HEAD Git blob.
+              # No caller helper, status shortcut, or filtered worktree equality is proof.
+              for raw in git(root, 'ls-tree', '-r', '-z', 'HEAD').split(b'\0'):
+                  if not raw:
+                      continue
+                  header, raw_path = raw.split(b'\t', 1)
+                  tree_mode, kind, blob = header.split(b' ')
+                  if tree_mode not in {b'100644', b'100755'} or kind != b'blob' or not re.fullmatch(b'[0-9a-f]{40}', blob):
+                      raise RuntimeError('Unsupported HEAD tree entry')
+                  paths.append(raw_path)
+                  relative = Path(os.fsdecode(raw_path))
+                  if relative.is_absolute() or '..' in relative.parts:
+                      raise RuntimeError('Invalid tracked path')
+                  path = root / relative
+                  no_symlinks(path)
+                  mode = path.lstat().st_mode
+                  if not stat.S_ISREG(mode):
+                      raise RuntimeError('Unsupported tracked file type')
+                  data = path.read_bytes()
+                  actual_blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest().encode()
+                  if actual_blob != blob or bool(mode & 0o111) != (tree_mode == b'100755'):
+                      raise RuntimeError('Physical tracked source differs from HEAD')
+                  rows.append((os.fsdecode(raw_path), mode & 0o111, hashlib.sha256(data).hexdigest()))
+              indexed = [path for path in git(root, 'ls-files', '-z').split(b'\0') if path]
+              if sorted(indexed) != sorted(paths):
+                  raise RuntimeError('Index and HEAD tracked paths differ')
+              if not rows:
+                  raise RuntimeError('Empty tracked source')
+              return hashlib.sha256(json.dumps(rows, separators=(',', ':')).encode()).hexdigest()
+
+
+          @contextlib.contextmanager
+          def canonical_lock(canonical):
+              directory = canonical / '.git'
+              path = directory / 'beanstalk-canonical-tests.lock'
+              no_symlinks(path)
+              if not directory.is_dir():
+                  raise RuntimeError('Canonical .git must be a real directory')
+              fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+              try:
+                  opened = os.fstat(fd)
+                  named = path.lstat()
+                  if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1
+                          or (opened.st_dev, opened.st_ino) != (named.st_dev, named.st_ino)):
+                      raise RuntimeError('Unsafe canonical lock inode')
+                  try:
+                      fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                  except BlockingIOError as exc:
+                      raise RuntimeError('Canonical tests already hold the lock') from exc
+                  yield
+              finally:
+                  os.close(fd)  # Kernel releases the lock. Never truncate/unlink the inode.
+
+
+          def run_compliance(environ, canonical=CANONICAL):
+              sha = validate_context(environ, canonical)
+              workspace = Path(environ['GITHUB_WORKSPACE'])
+              checker = workspace / 'compliance-with-suite-timeout.py'
+              no_symlinks(checker)
+              if hashlib.sha256(checker.read_bytes()).hexdigest() != ADAPTED_SHA256:
+                  raise RuntimeError('Adapted checker drift')
+              with canonical_lock(canonical):
+                  before = snapshot(canonical, sha)
+                  if snapshot(workspace / 'caller', sha) != before:
+                      raise RuntimeError('Canonical tracked bytes differ from exact caller')
+                  os.environ['PYTHONPATH'] = f'{canonical}:{canonical}/src:{canonical}/tests'
+                  sys.argv = [str(checker), '--repo', 'agents', '--root', str(canonical), '--markdown']
+                  if environ['GATE_FULL'] == 'true':
+                      sys.argv.append('--full')
+                  status = 0
+                  try:
+                      try:
+                          runpy.run_path(str(checker), run_name='__main__')
+                      except SystemExit as exc:
+                          status = exc.code if type(exc.code) is int else (0 if exc.code is None else 1)
+                  finally:
+                      # A printed checker PASS is insufficient if canonical source drifted.
+                      if snapshot(canonical, sha) != before:
+                          raise RuntimeError('Canonical source changed during compliance')
+                  return status
+
+
+          if __name__ == '__main__':
+              raise SystemExit(run_compliance(os.environ))
+          '''
+          namespace = {'__name__': 'local_profile_bootstrap'}
+          exec(compile(wrapper, '<local-profile>', 'exec'), namespace)
+          namespace['validate_context'](os.environ)
+          # Validation precedes writing a wrapper or allowing checkout to run.
+          with (Path(os.environ['RUNNER_TEMP']) / 'beanstalk-local-compliance.py').open('x') as stream:
+              stream.write(wrapper)
+          # GitHub prepends entries; add Homebrew last so its Python wins over CLT Python.
+          with open(os.environ['GITHUB_PATH'], 'a') as stream:
+              stream.write('/Library/Developer/CommandLineTools/usr/bin\n/opt/homebrew/bin\n')
+          PY
       - uses: actions/checkout@v5
         with:
           # Test the reviewed PR head (or exact push), not a moving branch or merge ref.
@@ -111,12 +307,20 @@ jobs:
 
           if __name__ == '__main__':
               adapted = adapt_checker(Path('gate-kit/bin/compliance.py').read_text())
-              prepare_checkout(Path('caller'), Path('/Users/stephenkall/beans/catalog/agents'),
-                               os.environ.get('GATE_EXPECTED_SHA', ''), os.environ)
+              if os.environ.get('GATE_RUNNER') != 'beans-mac':
+                  prepare_checkout(Path('caller'), Path('/Users/stephenkall/beans/catalog/agents'),
+                                   os.environ.get('GATE_EXPECTED_SHA', ''), os.environ)
               Path('compliance-with-suite-timeout.py').write_text(adapted)
           PY
       - name: Run compliance gate
         env:
+          GATE_RUNNER: ${{ inputs.runner }}
+          GATE_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GATE_EVENT_NAME: ${{ github.event_name }}
+          GATE_REPOSITORY: ${{ github.repository }}
+          GATE_EVENT_REPOSITORY: ${{ github.event.repository.full_name }}
+          GATE_REF: ${{ github.ref }}
+          GATE_PUSH_AFTER: ${{ github.event.after }}
           QA_KIT_DIR: ${{ github.workspace }}/qa-kit
           BEANFIT_SRC: ${{ github.workspace }}/beanfit/src
           GATE_REPO: ${{ inputs.repo }}
@@ -132,7 +336,9 @@ jobs:
           if [[ "$GATE_FULL" == "true" ]]; then
             gate_args+=(--full)
           fi
-          if [[ "$GATE_REPO" == "agents" ]]; then
+          if [[ "$GATE_REPO" == "agents" && "$GATE_RUNNER" == "beans-mac" ]]; then
+            python3 "$RUNNER_TEMP/beanstalk-local-compliance.py" | tee gate-report.md
+          elif [[ "$GATE_REPO" == "agents" ]]; then
             python3 compliance-with-suite-timeout.py "${gate_args[@]}" | tee gate-report.md
           else
             python3 gate-kit/bin/compliance.py "${gate_args[@]}" | tee gate-report.md

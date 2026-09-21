@@ -14,7 +14,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = (ROOT / '.github/workflows/compliance.yml').read_text()
-PROFILE = textwrap.dedent(WORKFLOW.split("python3 - <<'PY'\n", 1)[1].split('          PY\n', 1)[0])
+PROFILE = textwrap.dedent(WORKFLOW.split("      - name: Prepare isolated agents compliance profile\n", 1)[1].split("python3 - <<'PY'\n", 1)[1].split('          PY\n', 1)[0])
 NS = {'__name__': 'profile_test'}
 exec(compile(PROFILE, '<workflow-profile>', 'exec'), NS)
 CHECKER = (ROOT / 'bin/compliance.py').read_text()
