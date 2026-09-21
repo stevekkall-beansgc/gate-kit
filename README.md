@@ -15,7 +15,7 @@ than the developer-machine path recorded in the registry. Missing manifests,
 invalid active rows, repo roots, or required unit commands fail the gate.
 
 The workflow's `gate-kit` checkout is pinned to the immutable `v0.4.4` release
-tag, and its QA manifest is pinned to `qa-kit v0.4.2`. Caller stubs must use an immutable semver gate-kit tag as well; do not
+tag, and its QA manifest is pinned to `qa-kit v0.4.3`. Caller stubs must use an immutable semver gate-kit tag as well; do not
 publish or enable a workflow that checks out `main`.
 
 The optional `runner` input defaults to `ubuntu-latest`. Trusted push or manual
