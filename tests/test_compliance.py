@@ -191,14 +191,25 @@ class TestWorkflowContract(unittest.TestCase):
         caller = workflow.split("path: caller", 1)[0]
         self.assertIn("ref: ${{ github.event.pull_request.head.sha || github.sha }}", caller)
 
-    def test_clawstr_runtime_is_installed_before_agency_compliance(self):
+    def test_node_runtime_is_installed_before_compliance(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     ".github/workflows/compliance.yml").read_text()
         self.assertIn("uses: actions/setup-node@", workflow)
-        self.assertIn("if: ${{ inputs.repo == 'agency' }}", workflow)
         self.assertIn('node-version: "22"', workflow)
         self.assertLess(workflow.index("uses: actions/setup-node@"),
                         workflow.index("name: Run compliance gate"))
+
+    def test_node_runtime_covers_agency_and_beanfit_app_only(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    ".github/workflows/compliance.yml").read_text()
+        guard = workflow.split("uses: actions/setup-node@", 1)[0].rsplit("if:", 1)[-1].strip()
+        self.assertEqual(
+            guard, "${{ inputs.repo == 'agency' || inputs.repo == 'beanfit-app' }}")
+        covered = {name for name in ("agency", "beanfit-app")
+                   if f"inputs.repo == '{name}'" in guard}
+        self.assertEqual(covered, {"agency", "beanfit-app"})
+        for other in ("agents", "beanfit", "gate-kit", "qa-kit"):
+            self.assertNotIn(f"inputs.repo == '{other}'", guard)
 
 
 if __name__ == "__main__":
