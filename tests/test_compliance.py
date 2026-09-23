@@ -167,7 +167,7 @@ class TestWorkflowContract(unittest.TestCase):
                     ".github/workflows/compliance.yml").read_text()
         self.assertIn("path: gate-kit", workflow)
         self.assertIn("ref: v0.4.4", workflow)
-        self.assertIn("ref: v0.6.0", workflow)
+        self.assertIn("ref: v0.6.1", workflow)
         self.assertIn("ref: v0.4.0", workflow)
         self.assertIn("python3 gate-kit/bin/compliance.py", workflow)
         self.assertIn("--root caller", workflow)
@@ -189,7 +189,7 @@ class TestWorkflowContract(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         for doc in ("AGENTS.md", "README.md"):
             text = (root / doc).read_text()
-            self.assertIn("v0.6.0", text, f"{doc} must document qa-kit v0.6.0 pin")
+            self.assertIn("v0.6.1", text, f"{doc} must document qa-kit v0.6.1 pin")
             self.assertNotIn("v0.4.3", text, f"{doc} must not reference the retired qa-kit pin")
             self.assertIn("v0.4.4", text, f"{doc} must keep the immutable gate-kit CLI pin")
 
@@ -217,15 +217,15 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertLess(workflow.index("uses: actions/setup-node@"),
                         workflow.index("name: Run compliance gate"))
 
-    def test_node_runtime_covers_agency_and_beanfit_app_only(self):
+    def test_node_runtime_covers_registered_javascript_profiles(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     ".github/workflows/compliance.yml").read_text()
         guard = workflow.split("uses: actions/setup-node@", 1)[0].rsplit("if:", 1)[-1].strip()
         self.assertEqual(
-            guard, "${{ inputs.repo == 'agency' || inputs.repo == 'beanfit-app' }}")
-        covered = {name for name in ("agency", "beanfit-app")
+            guard, "${{ inputs.repo == 'agency' || inputs.repo == 'beanfit-app' || inputs.repo == 'bean-counter' }}")
+        covered = {name for name in ("agency", "beanfit-app", "bean-counter")
                    if f"inputs.repo == '{name}'" in guard}
-        self.assertEqual(covered, {"agency", "beanfit-app"})
+        self.assertEqual(covered, {"agency", "beanfit-app", "bean-counter"})
         for other in ("agents", "beanfit", "gate-kit", "qa-kit"):
             self.assertNotIn(f"inputs.repo == '{other}'", guard)
 
