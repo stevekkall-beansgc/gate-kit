@@ -35,6 +35,22 @@ class TestSh(unittest.TestCase):
         self.assertFalse(r["ok"])
         self.assertIn("entrypoint missing", r["tail"])
 
+    def test_timeout_fails_closed(self):
+        # The checker is source-pinned by CI, so retain its production 900s
+        # argument while shortening only the real subprocess for this test.
+        real_run = compliance.subprocess.run
+
+        def short_run(*args, **kwargs):
+            self.assertEqual(kwargs["timeout"], 900)
+            return real_run(*args, **{**kwargs, "timeout": 0.1})
+
+        with mock.patch.object(compliance.subprocess, "run", side_effect=short_run):
+            r = compliance.sh([sys.executable, "-c", "import time; time.sleep(10)"],
+                              Path(tempfile.gettempdir()))
+        self.assertFalse(r["ok"])
+        self.assertIn("timeout 900s", r["tail"])
+        self.assertLess(r["secs"], 5)
+
 
 class TestDocsCheck(unittest.TestCase):
     def _root(self, agents=None, readme=None):
