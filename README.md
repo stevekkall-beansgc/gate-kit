@@ -24,6 +24,21 @@ request workflows must keep the hosted default. The `beans-mac` runner uses its
 preinstalled `python3`; hosted runners continue to receive the pinned Python
 3.13 toolchain from `actions/setup-python`.
 
+## Synthetic quickstart (no workspace required)
+
+`python3 examples/synthetic_quickstart.py` builds a synthetic repo and qa-kit
+manifest in a temp directory, then exercises the real `bin/compliance.py` CLI
+as a subprocess — no BeanLabs workspace, private repos, credentials, or network
+needed. It demonstrates all three paths of the gate contract:
+
+1. a healthy synthetic repo emitting a green JSON verdict (exit 0);
+2. a broken `AGENTS.md` producing a `FAIL` verdict (exit 1);
+3. a missing qa-kit manifest failing closed as an infrastructure failure.
+
+Each run's machine-readable verdict is the JSON object on stdout's last line.
+The reusable workflow preserves the CLI output and uses its exit status as the
+gate result.
+
 The caller checkout is pinned to the reviewed pull-request head SHA or the exact
 push SHA, so the tested source is explicit rather than an implicit merge ref.
 

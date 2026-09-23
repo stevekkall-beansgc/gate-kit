@@ -153,6 +153,15 @@ class TestMainContract(unittest.TestCase):
 
 
 class TestWorkflowContract(unittest.TestCase):
+    def test_gate_caller_keeps_pull_requests_off_self_hosted_runner(self):
+        caller = (Path(__file__).resolve().parents[1] /
+                  ".github/workflows/gate.yml").read_text()
+        self.assertIn("on: [pull_request, push]", caller)
+        self.assertIn(
+            "runner: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && 'beans-mac' || 'ubuntu-latest' }}",
+            caller,
+        )
+
     def test_workflow_runs_tracked_gate_entrypoint_and_preserves_failures(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     ".github/workflows/compliance.yml").read_text()

@@ -6,4 +6,4 @@ jobs:
     with:
       repo: gate-kit
       full: false
-      runner: beans-mac
+      runner: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && 'beans-mac' || 'ubuntu-latest' }}
