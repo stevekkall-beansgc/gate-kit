@@ -168,7 +168,7 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertIn("path: gate-kit", workflow)
         self.assertIn("ref: v0.4.4", workflow)
         self.assertIn("ref: v0.6.0", workflow)
-        self.assertIn("ref: v0.1.1", workflow)
+        self.assertIn("ref: v0.4.0", workflow)
         self.assertIn("python3 gate-kit/bin/compliance.py", workflow)
         self.assertIn("--root caller", workflow)
         self.assertIn("QA_KIT_DIR: ${{ github.workspace }}/qa-kit", workflow)
@@ -192,6 +192,16 @@ class TestWorkflowContract(unittest.TestCase):
             self.assertIn("v0.6.0", text, f"{doc} must document qa-kit v0.6.0 pin")
             self.assertNotIn("v0.4.3", text, f"{doc} must not reference the retired qa-kit pin")
             self.assertIn("v0.4.4", text, f"{doc} must keep the immutable gate-kit CLI pin")
+
+    def test_beanfit_fixture_pin_documented_accurately_in_repo_docs(self):
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/compliance.yml").read_text()
+        beanfit = workflow.split("repository: stevekkall-beansgc/beanfit", 1)[1]
+        self.assertIn("ref: v0.4.0", beanfit.split("path: beanfit", 1)[0])
+        for doc in ("AGENTS.md", "README.md"):
+            text = (root / doc).read_text()
+            self.assertIn("v0.4.0", text, f"{doc} must document beanfit fixture v0.4.0 pin")
+            self.assertNotIn("v0.1.1", text, f"{doc} must not reference the retired fixture pin")
 
     def test_caller_checkout_is_the_reviewed_commit(self):
         workflow = (Path(__file__).resolve().parents[1] /
