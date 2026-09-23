@@ -2,6 +2,7 @@
 import contextlib
 import io
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -219,6 +220,40 @@ class TestWorkflowContract(unittest.TestCase):
             self.assertIn("v0.4.0", text, f"{doc} must document beanfit fixture v0.4.0 pin")
             self.assertNotIn("v0.1.1", text, f"{doc} must not reference the retired fixture pin")
 
+    def test_readme_quickstart_and_release_pins_match_checkout(self):
+        root = Path(__file__).resolve().parents[1]
+        readme = (root / "README.md").read_text()
+        workflow = (root / ".github/workflows/compliance.yml").read_text()
+
+        self.assertIn("python3 examples/synthetic_quickstart.py", readme)
+        for heading in (
+                "## 1. The problem",
+                "## 2. Run the synthetic demo",
+                "## 3. Follow the implementation",
+                "## 4. Failure-mode proof",
+                "## 5. Supported scope",
+                "## 6. Release pins in v0.4.20"):
+            self.assertIn(heading, readme)
+        for link in (
+                "[`bin/compliance.py`](bin/compliance.py)",
+                "[`.github/workflows/compliance.yml`](.github/workflows/compliance.yml)",
+                "[`examples/synthetic_quickstart.py`](examples/synthetic_quickstart.py)"):
+            self.assertIn(link, readme)
+        self.assertNotIn("/Users/", readme)
+        self.assertNotIn("~/beans", readme)
+
+        for repository in ("stevekkall-beansgc/gate-kit",
+                           "stevekkall-beansgc/qa-kit",
+                           "stevekkall-beansgc/beanfit"):
+            checkout = workflow.split(f"repository: {repository}", 1)[1]
+            checkout = checkout.split("path:", 1)[0]
+            match = re.search(r"\n\s+ref:\s*(\S+)", checkout)
+            self.assertIsNotNone(match)
+            self.assertIn(f"`{match.group(1)}`", readme)
+        self.assertIn("v0.4.20", readme)
+        self.assertIn("immutable `v0.4.4`", readme)
+        self.assertIn("not a claim about release recency", readme)
+
     def test_caller_checkout_is_the_reviewed_commit(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     ".github/workflows/compliance.yml").read_text()
@@ -244,6 +279,22 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertEqual(covered, {"agency", "beanfit-app", "bean-counter"})
         for other in ("agents", "beanfit", "gate-kit", "qa-kit"):
             self.assertNotIn(f"inputs.repo == '{other}'", guard)
+
+
+class TestSecurityPolicy(unittest.TestCase):
+    def test_policy_is_private_reporting_linked_and_scoped(self):
+        root = Path(__file__).resolve().parents[1]
+        security = (root / "SECURITY.md").read_text()
+        readme = (root / "README.md").read_text()
+        self.assertIn("[`SECURITY.md`](SECURITY.md)", readme)
+        self.assertIn(
+            "https://github.com/stevekkall-beansgc/gate-kit/security/advisories/new",
+            security,
+        )
+        self.assertIn("current `main` branch", security)
+        self.assertIn("latest release", security)
+        self.assertIn("Scope and limitations", security)
+        self.assertIn("privately", security)
 
 
 if __name__ == "__main__":
