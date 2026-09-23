@@ -167,7 +167,7 @@ class TestWorkflowContract(unittest.TestCase):
                     ".github/workflows/compliance.yml").read_text()
         self.assertIn("path: gate-kit", workflow)
         self.assertIn("ref: v0.4.4", workflow)
-        self.assertIn("ref: v0.4.3", workflow)
+        self.assertIn("ref: v0.6.0", workflow)
         self.assertIn("ref: v0.1.1", workflow)
         self.assertIn("python3 gate-kit/bin/compliance.py", workflow)
         self.assertIn("--root caller", workflow)
@@ -184,6 +184,14 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertIn("gate_args+=(--full)", workflow)
         self.assertIn('"${gate_args[@]}"', workflow)
         self.assertNotIn("python3 qa-kit/bin/compliance.py", workflow)
+
+    def test_qa_manifest_pin_documented_accurately_in_repo_docs(self):
+        root = Path(__file__).resolve().parents[1]
+        for doc in ("AGENTS.md", "README.md"):
+            text = (root / doc).read_text()
+            self.assertIn("v0.6.0", text, f"{doc} must document qa-kit v0.6.0 pin")
+            self.assertNotIn("v0.4.3", text, f"{doc} must not reference the retired qa-kit pin")
+            self.assertIn("v0.4.4", text, f"{doc} must keep the immutable gate-kit CLI pin")
 
     def test_caller_checkout_is_the_reviewed_commit(self):
         workflow = (Path(__file__).resolve().parents[1] /
