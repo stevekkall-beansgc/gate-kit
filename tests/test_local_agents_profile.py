@@ -12,7 +12,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = (ROOT/'.github/workflows/compliance.yml').read_text()
-STEP = WORKFLOW.split('      - name: Guard trusted local agents runner before checkout\n', 1)[1].split('      - uses: actions/checkout@v5', 1)[0]
+STEP = WORKFLOW.split('      - name: Guard trusted local agents runner before checkout\n', 1)[1].split('      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8', 1)[0]
 BOOTSTRAP = textwrap.dedent(STEP.split("/opt/homebrew/bin/python3 - <<'PY'\n", 1)[1].split('          PY\n', 1)[0])
 TREE = ast.parse(BOOTSTRAP)
 WRAPPER = ast.literal_eval(next(node.value for node in TREE.body if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'wrapper' for t in node.targets)))
@@ -90,7 +90,7 @@ class TestTrustedContext(LocalFixture):
             NS['validate_context'](self.env,self.canonical)
 
     def test_guard_and_working_git_path_precede_checkout(self):
-        self.assertLess(WORKFLOW.index('name: Guard trusted local agents'),WORKFLOW.index('uses: actions/checkout@v5'))
+        self.assertLess(WORKFLOW.index('name: Guard trusted local agents'),WORKFLOW.index('uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'))
         self.assertIn("if: inputs.repo == 'agents' && inputs.runner == 'beans-mac'",STEP)
         self.assertIn('/opt/homebrew/bin/python3',STEP)
         self.assertIn("namespace['validate_context'](os.environ)",BOOTSTRAP)

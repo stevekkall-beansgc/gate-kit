@@ -64,6 +64,8 @@ The scan uses immutable upstream pins:
 
 The workflow runs the pinned container directly with `--network none`, mounts only `$GITHUB_WORKSPACE` at `/workspace:ro`, and passes no GitHub token or secret. It scans only gate-kit's checked-in `.github/workflows` directory with `--persona=regular --no-online-audits --no-exit-codes --color=never`. The job's `continue-on-error` keeps findings report-only, but the Docker command is not error-suppressed: scanner setup or internal errors remain visible in the step result and must be investigated rather than treated as a clean scan.
 
+The root `zizmor.yml` applies `hash-pin` to `*` and permits `ref-pin` only for the exact reusable-workflow identity `stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml`. The internal gate uses that identity at `@v0.4.11`. This own annotated tag is never moved, and the separate release gate proves the referenced workflow SHA before release. The exception does not relax third-party actions, which remain pinned to full 40-character commit SHAs.
+
 Severity policy for review:
 
 - **High:** fix before merge or record a specific, reviewable acceptance rationale.
@@ -110,4 +112,4 @@ Before opening or updating a pull request:
 
 6. In the pull request, state what changed and why, list the commands and results, describe security and compatibility impact, and link any public follow-up. Never include credentials, private paths, customer data, or private-service links.
 
-Tests must cover changed behavior and failure propagation. Keep third-party actions pinned to full 40-character commits and pin any separately downloaded tool version or image digest.
+Tests must cover changed behavior and failure propagation. Keep third-party actions pinned to full 40-character commits; the only reusable-workflow ref-pin exception is the documented internal gate-kit identity above. Pin any separately downloaded tool version or image digest.

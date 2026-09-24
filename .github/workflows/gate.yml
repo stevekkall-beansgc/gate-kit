@@ -1,5 +1,7 @@
 name: gate
 on: [pull_request, push]
+permissions:
+  contents: read
 jobs:
   compliance:
     uses: stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.4.11

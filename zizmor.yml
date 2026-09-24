@@ -1,0 +1,6 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml": ref-pin
+        "*": hash-pin

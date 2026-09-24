@@ -218,32 +218,36 @@ jobs:
           with open(os.environ['GITHUB_PATH'], 'a') as stream:
               stream.write('/Library/Developer/CommandLineTools/usr/bin\n/opt/homebrew/bin\n')
           PY
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           # Test the reviewed PR head (or exact push), not a moving branch or merge ref.
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: caller
+          persist-credentials: false
       # actions/checkout in a called workflow checks out the caller, not this
       # repository. Keep this pinned to the released gate-kit tag so callers
       # cannot silently execute moving control-plane code.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           repository: stevekkall-beansgc/gate-kit
           ref: v0.4.4
           path: gate-kit
-      - uses: actions/checkout@v5
+          persist-credentials: false
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           repository: stevekkall-beansgc/qa-kit
           ref: v0.6.1
           path: qa-kit
+          persist-credentials: false
       # BeanFit App's local E2E drives the BeanFit CLI. Keep the fixture
       # immutable so hosted CI never depends on an unpinned sibling branch.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           repository: stevekkall-beansgc/beanfit
           ref: v0.4.0
           path: beanfit
-      - uses: actions/setup-python@v6
+          persist-credentials: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         if: inputs.runner != 'beans-mac'
         with:
           python-version: "3.13"

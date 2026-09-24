@@ -96,7 +96,9 @@ The workflow release and the checker release are separate contracts. The reusabl
 
 For ordinary callers, the workflow then runs the pinned checker as `python3 gate-kit/bin/compliance.py`, points `QA_KIT_DIR` at the checked-out `qa-kit` manifest, and passes `--root caller` for the reviewed caller checkout. It does not run a moving `main` checkout of the checker. For the `agents` profile, the workflow verifies the pinned checker source and changes only its command timeout literals from 900 to 14400 seconds before running the adapted copy; check names, commands, and failure semantics remain the same.
 
-`v0.4.20` therefore identifies the reusable workflow release, not a claim that the checker is also `v0.4.20`. Keeping the immutable `v0.4.4` checker pin is intentional when its contract is unchanged. The three refs above are release-specific compatibility pins, not a claim about release recency. Caller stubs pin a separate immutable reusable-workflow tag; this README does not change those pins.
+`v0.4.20` therefore identifies the reusable workflow release, not a claim that the checker is also `v0.4.20`. Keeping the immutable `v0.4.4` checker pin is intentional when its contract is unchanged. The three refs above are release-specific compatibility pins, not a claim about release recency.
+
+gate-kit's internal caller is the sole reusable-workflow ref-pin exception: `.github/workflows/gate.yml` must use `stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.4.11`, an immutable annotated semver tag. This own annotated tag is never moved, and the separate release gate proves the referenced workflow SHA before release. The root `zizmor.yml` applies `hash-pin` to every other action identity, so third-party actions remain pinned to full 40-character commit SHAs.
 
 ## Repository checks
 
