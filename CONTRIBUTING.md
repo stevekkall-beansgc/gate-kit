@@ -55,15 +55,14 @@ The command must exit `0` and print all three expected cases: a green pass, a do
 
 Pull requests and pushes to `main` run `.github/workflows/workflow-security.yml`. It scans only gate-kit's checked-in `.github/workflows` directory. The job is deliberately report-only: findings do not fail the existing test or compliance CI.
 
-The scan is reproducible through these immutable upstream pins, verified against the upstream `v0.6.1` tag on 2026-09-24:
+The scan uses immutable upstream pins:
 
 | Component | Immutable pin |
 | --- | --- |
 | `actions/checkout` | `08c6903cd8c0fde910a37f88322edcfb5dd907a8` (`v5.0.0`) |
-| `zizmorcore/zizmor-action` | `6fc4b006235f201fdab3722e17240ab420d580e5` (`v0.6.1`) |
 | zizmor `1.28.0` container | `ghcr.io/zizmorcore/zizmor:1.28.0@sha256:8e6b3e4fb74d1aa5d23e83ea369f386c66eced0d1fb944d32cd8b2aac100b00d` |
 
-The workflow has read-only repository permission, disables online audits and Advanced Security upload, scans no caller repository, and reports every severity and confidence level. It explicitly sets `token: ""`, overriding the action's `github.token` default; the zizmor container therefore receives an empty `GH_TOKEN` rather than a GitHub token. Its `continue-on-error` setting also makes scanner setup or internal errors non-blocking; such an error means the scan did not complete and must be investigated rather than treated as a clean result.
+The workflow runs the pinned container directly with `--network none`, mounts only `$GITHUB_WORKSPACE` at `/workspace:ro`, and passes no GitHub token or secret. It scans only gate-kit's checked-in `.github/workflows` directory with `--persona=regular --no-online-audits --no-exit-codes --color=never`. The job's `continue-on-error` keeps findings report-only, but the Docker command is not error-suppressed: scanner setup or internal errors remain visible in the step result and must be investigated rather than treated as a clean scan.
 
 Severity policy for review:
 
@@ -78,6 +77,7 @@ To reproduce the same local inputs with the pinned container, run from the repos
 
 ```sh
 docker run --rm \
+  --network none \
   --volume "$PWD:/workspace:ro" \
   --workdir /workspace \
   ghcr.io/zizmorcore/zizmor:1.28.0@sha256:8e6b3e4fb74d1aa5d23e83ea369f386c66eced0d1fb944d32cd8b2aac100b00d \

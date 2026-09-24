@@ -82,7 +82,7 @@ The manifest is the source of eligibility and commands:
 
 The reusable workflow defaults to `ubuntu-latest`. A trusted push caller may select the repository-scoped `beans-mac` runner; pull requests in the checked-in caller stay hosted. The `beans-mac` path uses its preinstalled Python and enforces its separate canonical-checkout guard.
 
-This repository is a compliance gate, not a dependency scanner, history auditor, credential manager, deployment system, or security certification. The report-only zizmor job scans only gate-kit's own checked-in workflow definitions and supplies an empty token to its offline container, so the scan receives no GitHub token; it does not inspect or certify caller repositories. The synthetic demo proves the local gate contract; it does not establish any claim about a repository's history, dependencies, production security, or external services.
+This repository is a compliance gate, not a dependency scanner, history auditor, credential manager, deployment system, or security certification. The report-only zizmor job runs the pinned `ghcr.io/zizmorcore/zizmor:1.28.0@sha256:8e6b3e4fb74d1aa5d23e83ea369f386c66eced0d1fb944d32cd8b2aac100b00d` container directly with `--network none`, mounts only the checkout read-only, passes no GitHub token or secret, and scans only gate-kit's own checked-in workflow definitions. It does not inspect or certify caller repositories. The synthetic demo proves the local gate contract; it does not establish any claim about a repository's history, dependencies, production security, or external services.
 
 ## 6. Release pins in v0.4.20
 

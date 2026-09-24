@@ -20,14 +20,15 @@ jobs:
         with:
           persist-credentials: false
       - name: Scan this repository's workflows
-        uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
-        with:
-          inputs: .github/workflows
-          collect: workflows
-          online-audits: "false"
-          token: ""
-          persona: regular
-          version: "1.28.0"
-          advanced-security: "false"
-          color: "false"
-          fail-on-no-inputs: "true"
+        run: |
+          docker run --rm \
+            --network none \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --workdir /workspace \
+            ghcr.io/zizmorcore/zizmor:1.28.0@sha256:8e6b3e4fb74d1aa5d23e83ea369f386c66eced0d1fb944d32cd8b2aac100b00d \
+            --persona=regular \
+            --no-online-audits \
+            --no-exit-codes \
+            --color=never \
+            -- \
+            .github/workflows
