@@ -1,11 +1,14 @@
 ## What & why
-<!-- one paragraph: what changes, why now; link hub task / BETS row if driven by one -->
+Explain what changes, why now, and who benefits.
 
 ## Evidence
-- [ ] Tests green locally (`make test` / repo unit cmd) — CI will confirm
-- [ ] CONTRACT.md stability promises updated if touched
-- [ ] No secrets committed (GSM is source of truth; `bl` for anything sensitive)
-- [ ] Docs standard intact: README + AGENTS.md reflect reality
+- [ ] `python3 -m py_compile bin/compliance.py`
+- [ ] `python3 scripts/check_stdlib.py bin/`
+- [ ] `python3 -m unittest discover -s tests -v`
+- [ ] `python3 examples/synthetic_quickstart.py`
+- [ ] `git diff --check`
+- [ ] No secrets, credentials, private paths, or customer data committed
+- [ ] README, `AGENTS.md`, `CONTRIBUTING.md`, and `SECURITY.md` reflect behavior changes
 
-## Blast radius
-<!-- repos/services affected; migration or backfill needed? -->
+## Security and compatibility
+For workflow changes, disposition every zizmor finding. Note any migration, pin, or fail-closed contract change.

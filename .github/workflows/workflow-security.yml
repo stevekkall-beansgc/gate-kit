@@ -1,0 +1,33 @@
+name: workflow-security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  zizmor:
+    continue-on-error: true
+    name: zizmor (report-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out gate-kit workflows
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Scan this repository's workflows
+        uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
+        with:
+          inputs: .github/workflows
+          collect: workflows
+          online-audits: "false"
+          token: ""
+          persona: regular
+          version: "1.28.0"
+          advanced-security: "false"
+          color: "false"
+          fail-on-no-inputs: "true"

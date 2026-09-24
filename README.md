@@ -54,7 +54,7 @@ Read these links in order:
 3. [`.github/workflows/compliance.yml`](.github/workflows/compliance.yml) — the reusable workflow: caller checkout, fixed dependency checkouts, runner setup, command routing, and failure propagation.
 4. [`tests/test_compliance.py`](tests/test_compliance.py) and [`tests/test_synthetic_quickstart.py`](tests/test_synthetic_quickstart.py) — offline contract and regression coverage.
 
-[`AGENTS.md`](AGENTS.md) contains the repository's contributor-facing test commands and guardrails. For private vulnerability reports, see [`SECURITY.md`](SECURITY.md).
+[`CONTRIBUTING.md`](CONTRIBUTING.md) is the self-contained public route for setup, tests, the synthetic demo, workflow security review, and change review. [`AGENTS.md`](AGENTS.md) remains the compact test and guardrail reference. For private vulnerability reports, see [`SECURITY.md`](SECURITY.md).
 
 ## 4. Failure-mode proof
 
@@ -82,7 +82,7 @@ The manifest is the source of eligibility and commands:
 
 The reusable workflow defaults to `ubuntu-latest`. A trusted push caller may select the repository-scoped `beans-mac` runner; pull requests in the checked-in caller stay hosted. The `beans-mac` path uses its preinstalled Python and enforces its separate canonical-checkout guard.
 
-This repository is a compliance gate, not a dependency scanner, history auditor, credential manager, deployment system, or security certification. The synthetic demo proves the local gate contract; it does not establish any claim about a repository's history, dependencies, production security, or external services.
+This repository is a compliance gate, not a dependency scanner, history auditor, credential manager, deployment system, or security certification. The report-only zizmor job scans only gate-kit's own checked-in workflow definitions and supplies an empty token to its offline container, so the scan receives no GitHub token; it does not inspect or certify caller repositories. The synthetic demo proves the local gate contract; it does not establish any claim about a repository's history, dependencies, production security, or external services.
 
 ## 6. Release pins in v0.4.20
 
@@ -106,3 +106,5 @@ Run the public, offline verification route with:
 python3 examples/synthetic_quickstart.py
 python3 -m unittest discover -s tests -q
 ```
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the exact syntax and standard-library checks, review steps, pinned report-only workflow scan, severity policy, and explicit security-scope limitations.
