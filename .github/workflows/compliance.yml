@@ -236,7 +236,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           repository: stevekkall-beansgc/qa-kit
-          ref: v0.6.1
+          ref: v0.6.6
           path: qa-kit
           persist-credentials: false
       # BeanFit App's local E2E drives the BeanFit CLI. Keep the fixture

@@ -91,7 +91,7 @@ The workflow release and the checker release are separate contracts. The reusabl
 | Purpose | Repository | Pin | Checked-out path |
 | --- | --- | --- | --- |
 | Compliance checker | `gate-kit` | `v0.4.4` | `gate-kit` |
-| QA manifest | `qa-kit` | `v0.6.1` | `qa-kit` |
+| QA manifest | `qa-kit` | `v0.6.6` | `qa-kit` |
 | BeanFit CLI fixture used by `beanfit-app` e2e | `BeanFit` | `v0.4.0` | `beanfit` |
 
 For ordinary callers, the workflow then runs the pinned checker as `python3 gate-kit/bin/compliance.py`, points `QA_KIT_DIR` at the checked-out `qa-kit` manifest, and passes `--root caller` for the reviewed caller checkout. It does not run a moving `main` checkout of the checker. For the `agents` profile, the workflow verifies the pinned checker source and changes only its command timeout literals from 900 to 14400 seconds before running the adapted copy; check names, commands, and failure semantics remain the same.

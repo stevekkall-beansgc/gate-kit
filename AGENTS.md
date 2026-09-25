@@ -13,7 +13,7 @@ The eligible fleet is explicit: manifest rows with status `active` or
 registry infrastructure, repo roots, or required entrypoints fail closed.
 
 The reusable workflow executes the unchanged CLI from immutable `v0.4.4`
-and the manifest from qa-kit `v0.6.1`, with the BeanFit CLI fixture pinned
+and the manifest from qa-kit `v0.6.6`, with the BeanFit CLI fixture pinned
 to immutable `v0.4.0`. Workflow-only releases can keep the
 released CLI pin when its contract is unchanged. Callers pin an immutable
 workflow release; never publish a workflow that checks out `main`.
@@ -66,4 +66,4 @@ timeout to 14400 seconds; the job allows 270 minutes. Manifest docs/setup/unit/f
 commands, exit failures, check identity and other repository profiles remain
 unchanged. Local tests generate no accepted cache or model/scheduler effect.
 
-Bean Counter uses the manifest-owned pinned Rust/Python setup and local SQLite unit/e2e commands from qa-kit v0.6.1. Its hosted gate prepares Node.js 22 for frozen contract checks. No local runner, database service or customer credentials are required.
+Bean Counter uses the manifest-owned pinned Rust/Python setup and local SQLite unit/e2e commands from qa-kit v0.6.6. Its hosted gate prepares Node.js 22 for frozen contract checks. No local runner, database service or customer credentials are required.
