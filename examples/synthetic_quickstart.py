@@ -3,7 +3,7 @@
 
 Builds a self-contained synthetic repo + qa-kit manifest in a temp directory
 and runs the actual bin/compliance.py entrypoint against it as a subprocess.
-Works on any machine with Python 3 and a shell: no BeanLabs workspace,
+Works on any machine with Python 3 and a shell: no Legume Labs workspace,
 private repos, credentials, or network access required.
 
 Scenarios demonstrated (the real gate's contract):

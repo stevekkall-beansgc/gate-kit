@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check_stdlib.py — enforce the BeanLabs stdlib-only contract.
+"""check_stdlib.py — enforce the Legume Labs stdlib-only contract.
 
 Usage: check_stdlib.py DIR [DIR...]
 
