@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""compliance.py — deterministic PR/push compliance gate for BeanLabs repos.
+"""compliance.py — deterministic PR/push compliance gate for Legume Labs repos.
 
 Runs, for one repo (or every active manifest row):
   1. docs standard   (README + AGENTS.md, sections match manifest entrypoints)

@@ -1,6 +1,6 @@
 # AGENTS.md — gate-kit
 
-Deterministic PR/push compliance gates for BeanLabs repos.
+Deterministic PR/push compliance gates for Legume Labs repos.
 
 ## Layout
 - `.github/workflows/compliance.yml` — reusable workflow (called via
