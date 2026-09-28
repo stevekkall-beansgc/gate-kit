@@ -232,7 +232,7 @@ class TestWorkflowContract(unittest.TestCase):
                 "## 3. Follow the implementation",
                 "## 4. Failure-mode proof",
                 "## 5. Supported scope",
-                "## 6. Release pins in v0.4.20"):
+                "## 6. Release pins in v0.4.24"):
             self.assertIn(heading, readme)
         for link in (
                 "[`bin/compliance.py`](bin/compliance.py)",
@@ -250,7 +250,7 @@ class TestWorkflowContract(unittest.TestCase):
             match = re.search(r"\n\s+ref:\s*(\S+)", checkout)
             self.assertIsNotNone(match)
             self.assertIn(f"`{match.group(1)}`", readme)
-        self.assertIn("v0.4.20", readme)
+        self.assertIn("The earlier `v0.4.20` workflow used QA manifest `v0.6.1`", readme)
         self.assertIn("immutable `v0.4.4`", readme)
         self.assertIn("not a claim about release recency", readme)
 
