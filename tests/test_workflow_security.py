@@ -57,7 +57,7 @@ class TestWorkflowSecurityCheck(unittest.TestCase):
     def test_third_party_actions_use_sha_pins_and_internal_caller_uses_annotated_tag(self):
         checkout = "actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8"
         self.assertEqual(COMPLIANCE.count(checkout), 4)
-        self.assertEqual(TEST.count(checkout), 1)
+        self.assertEqual(TEST.count(checkout), 2)
         self.assertIn(
             "actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c",
             COMPLIANCE,
@@ -88,7 +88,7 @@ class TestWorkflowSecurityCheck(unittest.TestCase):
         )
 
     def test_checkouts_do_not_persist_credentials_and_callers_are_read_only(self):
-        for workflow, count in ((COMPLIANCE, 4), (TEST, 1), (WORKFLOW, 1)):
+        for workflow, count in ((COMPLIANCE, 4), (TEST, 2), (WORKFLOW, 1)):
             self.assertEqual(workflow.count("persist-credentials: false"), count)
             self.assertEqual(workflow.count("uses: actions/checkout@"), count)
         for workflow in (TEST, GATE):
