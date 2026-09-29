@@ -1,5 +1,6 @@
 """Wrong workflow authority and hidden source edits fail before task launch."""
 import json
+import os
 from pathlib import Path
 import runpy
 import subprocess
@@ -72,3 +73,55 @@ class TestWorkflowPreflight(unittest.TestCase):
             self.run_pair()
         self.assertFalse(marker.exists())
         self.assertEqual(list(self.temporary.iterdir()), [])
+
+    def test_hidden_bootstrap_never_runs_before_entrypoint_source_verification(self):
+        marker = self.base / "untrusted-bootstrap-ran"
+        target = self.source / "bin/validation_adapter.py"
+        original = target.read_bytes()
+        env = {**os.environ, **self.env, "GITHUB_WORKSPACE": str(self.workspace), "RUNNER_TEMP": str(self.temporary)}
+        for flag, undo in (("--assume-unchanged", "--no-assume-unchanged"),
+                           ("--skip-worktree", "--no-skip-worktree")):
+            with self.subTest(flag=flag):
+                self.git("update-index", flag, "bin/validation_adapter.py")
+                target.write_text("from pathlib import Path\nPath(" + repr(str(marker)) +
+                                  ").touch()\nraise ValueError('untrusted bootstrap ran')\n")
+                try:
+                    result = subprocess.run([os.sys.executable, "-I", str(self.source / "bin/run_workflow_validation.py")],
+                                            env=env, capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertFalse(marker.exists(), result.stdout)
+                    self.assertEqual(list(self.temporary.iterdir()), [])
+                finally:
+                    target.write_bytes(original)
+                    self.git("update-index", undo, "bin/validation_adapter.py")
+                    marker.unlink(missing_ok=True)
+
+    def test_replaced_or_symlinked_index_cannot_attest_altered_bootstrap(self):
+        index = self.source / ".git/index"
+        original_index = index.read_bytes()
+        target = self.source / "bin/validation_adapter.py"
+        original_source = target.read_bytes()
+        marker = self.base / "untrusted-index-bootstrap-ran"
+        target.write_text("from pathlib import Path\nPath(" + repr(str(marker)) +
+                          ").touch()\nraise ValueError('untrusted index bootstrap ran')\n")
+        self.git("add", "bin/validation_adapter.py")
+        replacement = index.read_bytes()
+        index.write_bytes(original_index)
+        external = self.base / "replacement-index"
+        external.write_bytes(replacement)
+        env = {**os.environ, **self.env, "GITHUB_WORKSPACE": str(self.workspace), "RUNNER_TEMP": str(self.temporary)}
+        for symlink in (False, True):
+            with self.subTest(symlink=symlink):
+                if symlink:
+                    index.unlink()
+                    index.symlink_to(external)
+                else:
+                    index.write_bytes(replacement)
+                result = subprocess.run([os.sys.executable, "-I", str(self.source / "bin/run_workflow_validation.py")],
+                                        env=env, capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 1, result.stdout)
+                self.assertFalse(marker.exists(), result.stdout)
+                self.assertEqual(list(self.temporary.iterdir()), [])
+        index.unlink()
+        index.write_bytes(original_index)
+        target.write_bytes(original_source)
