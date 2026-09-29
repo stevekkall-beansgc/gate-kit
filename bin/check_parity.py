@@ -7,9 +7,11 @@ The trusted workflow must separately establish its actual check outcome.
 import argparse
 import json
 import re
+import runpy
 import sys
+from pathlib import Path
 
-from validation_adapter import _unique_object
+_unique_object = runpy.run_path(str(Path(__file__).with_name("validation_adapter.py")))["_unique_object"]
 
 
 def check_parity(local, ci, *, repo, head, bundle):

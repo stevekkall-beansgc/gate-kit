@@ -38,12 +38,28 @@ selection. Empty/malformed/missing enrollment fails this adapter; it never
 silently reports a legacy pass. Routing unenrolled callers to legacy execution is
 the separately reviewed workflow's responsibility.
 
-Initial CI authorization supports only disposable GitHub-hosted `push` and
-`pull_request` contexts. The actual event payload must agree with the repository,
+CI authorization supports disposable GitHub-hosted `push` and `pull_request`
+contexts plus the separately qualified, inactive Mac pilot policy below.
+The actual event payload must agree with the repository,
 ref and expected candidate SHA. PR heads, including hosted fork PRs, are checked
 directly; a merge SHA cannot substitute. `pull_request_target`, schedules,
-dispatch events and self-hosted execution are unsupported. The existing agents
+dispatch events and every other self-hosted route are unsupported. The existing agents
 and BeanMind profiles are explicitly excluded from this adapter.
+
+The inactive Mac policy accepts `push` to `refs/heads/main` only for
+`stevekkall-beansgc/legume-labs` on runner
+`beans-macbook-legume-labs-validation`, variant `macos-arm64-py312`, or
+`stevekkall-beansgc/beanfit-app` on runner
+`beans-macbook-beanfit-app-validation`, variant `macos-arm64-node22-py312`.
+Both require Actions self-hosted/macOS/ARM64 metadata, the actual event payload
+and exact source SHA, and a complete centrally reviewed `ci-required` selection
+in context `ci`. Runner labels alone confer no authority. This source release
+does not register runners or enroll either repository. The later workflow must
+apply the same trusted guard before candidate checkout, and independent actual
+GitHub job/readback must prove the repository-scoped runner and exact candidate.
+Private/fork PRs never select this persistent-machine route. Existing Linux tasks
+and any normative Linux coverage remain separately recorded; Mac is not a Linux
+cell or a release-context substitute.
 
 The existing README/AGENTS/manifest-unit-command documentation check remains
 required alongside shared execution. A passing task plan cannot conceal its
@@ -111,13 +127,19 @@ rollback; unavailable CI or missing variants never justify weakening checks.
 ```sh
 python3 -m unittest discover -s tests -v
 python3 scripts/check_stdlib.py bin/
-GATE_SHARED_QA_FIXTURE=/trusted/pinned/qa-kit \
-  python3 -m unittest discover -s integration -v
+bash setup/qa-validation/bootstrap.sh
+bash scripts/test_validation_e2e.sh
 ```
 
 The explicit integration suite uses real shared executor bytes from the prepared
 QA fixture and disposable synthetic Git repositories. Its default fixture path is
 `.qa-fixtures/qa-kit`; a missing fixture fails, with no sibling fallback or skip.
+The owned bootstrap fetches only the reviewed public QA repository at exact
+commit `cf3cebee5a4f975260c330aa585b7cd3d5b63a79`, verifies all tracked physical
+source and executor digest, and refuses an existing dirty/drifted fixture without
+resetting or deleting it. It never invokes QA's tests or tasks. An explicitly
+prepared fixture can be supplied with `GATE_SHARED_QA_FIXTURE`; the default needs
+no exported setup variable. QA owns registration of these setup/E2E entrypoints.
 Tests cover successful delegation, typed literal environment, setup failure
 blocking dependents, retained docs failure, incomplete variants, bad bundle
 digests, hidden control edits, cancellation cleanup, same-host local/CI comparison

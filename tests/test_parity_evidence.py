@@ -1,6 +1,9 @@
 """Same-host comparison cannot substitute another source/runtime/coverage."""
 import copy
+import json
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -37,6 +40,17 @@ class TestParityEvidence(unittest.TestCase):
     def test_matching_execution_is_not_a_verified_github_check(self):
         self.assertEqual(self.check()["parity"], "pass")
         self.assertFalse(self.check()["github_check_verified"])
+
+    def test_isolated_cli_compares_real_serialized_receipts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            local, ci = [Path(directory) / name for name in ("local.json", "ci.json")]
+            local.write_text(json.dumps(self.local))
+            ci.write_text(json.dumps(self.ci))
+            result = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve().parents[1] / "bin/check_parity.py"),
+                                     "--local", str(local), "--ci", str(ci), "--repo", "sample",
+                                     "--head", "a" * 40, "--bundle", "c" * 64], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse(json.loads(result.stdout)["github_check_verified"])
 
     def test_wrong_candidate_is_rejected(self):
         self.ci["validation"]["candidate"]["before"]["head"] = "d" * 40

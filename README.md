@@ -122,3 +122,11 @@ conditional setup can prepare the public executor fixture. Every other legacy
 cohort retains QA `v0.6.6`; checker/fixture pins, full coverage and runner guards
 remain as before. [The adapter contract](VALIDATION-ADAPTER.md) describes preparation,
 strict fixture tests, evidence limits, and the staged workflow adoption boundary.
+
+The separately qualified Mac pilot policy is inactive until a reviewed control
+bundle, workflow and repository-scoped runner registration are adopted. It
+accepts only exact main pushes for the two fixed pilot repositories and named
+macOS/ARM64 runners; PRs and forks retain hosted execution. Prepare the real
+published QA fixture with `bash setup/qa-validation/bootstrap.sh`, then run the
+owned E2E entrypoint `bash scripts/test_validation_e2e.sh`. Preparation refuses
+dirty or drifted existing fixtures without resetting them.
