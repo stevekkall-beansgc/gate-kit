@@ -78,13 +78,16 @@ def read_trusted_json(path, trusted_root, expected_digest):
         relative = path.relative_to(root)
     except ValueError as exc:
         raise ValueError("control outside trusted root") from exc
-    if ".." in relative.parts or root.is_symlink() or not root.is_dir():
+    if any(part in ("..", ".git") for part in relative.parts) or root.is_symlink() or not root.is_dir():
         raise ValueError("ambiguous trusted control path")
     cursor = root
     for component in relative.parts:
         cursor = cursor / component
         if cursor.is_symlink():
             raise ValueError("symlink in trusted control path")
+    # Digest equality alone cannot attest that an ignored file came from the
+    # trusted Git commit. The root is physically verified before this loader.
+    _git(root, "ls-files", "--error-unmatch", "--", str(relative))
     try:
         raw = path.read_bytes()
         if hashlib.sha256(raw).hexdigest() != expected_digest:

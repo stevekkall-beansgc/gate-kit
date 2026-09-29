@@ -170,6 +170,29 @@ class TestTrustedControls(unittest.TestCase):
         self.control = self.root / "authorization.json"
         self.control.write_text(json.dumps({"effects": ["scratch"]}))
         self.digest = hashlib.sha256(self.control.read_bytes()).hexdigest()
+        subprocess.run(["git", "-C", str(self.root), "init", "-q"], check=True)
+        (self.root / ".gitignore").write_text("ignored/\n")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "-c", "user.name=Synthetic",
+                        "-c", "user.email=synthetic@example.invalid", "-c", "commit.gpgsign=false",
+                        "commit", "-qm", "tracked controls"], check=True)
+
+    def test_ignored_control_is_not_commit_provenance_even_with_correct_digest(self):
+        ignored = self.root / "ignored"
+        ignored.mkdir()
+        path = ignored / "bundle.json"
+        path.write_text('{"effects": []}')
+        head = subprocess.check_output(["git", "-C", str(self.root), "rev-parse", "HEAD"],
+                                       text=True).strip()
+        self.gate.verify_checkout(self.root, head)
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        with self.assertRaises(ValueError):
+            self.gate.read_trusted_json(path, self.root, digest)
+
+    def test_git_administrative_file_cannot_authorize_control(self):
+        path = self.root / ".git/config"
+        with self.assertRaisesRegex(ValueError, "ambiguous"):
+            self.gate.read_trusted_json(path, self.root, hashlib.sha256(path.read_bytes()).hexdigest())
 
     def test_exact_control_digest_is_required(self):
         value = self.gate.read_trusted_json(self.control, self.root, self.digest)
