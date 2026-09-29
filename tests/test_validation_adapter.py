@@ -27,7 +27,8 @@ class TestExecutorBoundary(unittest.TestCase):
                    "PYTHONPATH": "/unreviewed", "GITHUB_TOKEN": "synthetic"}
         command = [sys.executable, "-I", "-c",
                    "import os,json;print(json.dumps(dict(os.environ)))"]
-        process, cancelled = gate.invoke_executor(command, gate.executor_environment(ambient), "/private/tmp")
+        process, cancelled = gate.invoke_executor(command, gate.executor_environment(ambient),
+                                                  tempfile.gettempdir())
         child = json.loads(process.stdout)
         self.assertEqual(process.returncode, 0)
         self.assertFalse(cancelled)
