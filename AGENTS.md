@@ -33,7 +33,9 @@ because its macOS packages require GitHub's non-portable hosted-toolcache path.
 - Syntax pin: `python3 -m py_compile bin/compliance.py`
 - Regression suite: `python3 -m unittest discover -s tests -v`
 - Shared-executor integration: with the pinned QA fixture prepared,
-  `python3 -m unittest discover -s integration -v`. A missing fixture fails;
+  `bash scripts/test_validation_e2e.sh` (runs
+  `python3 -B -m unittest discover -s integration -v`). Prepare it with
+  `bash setup/qa-validation/bootstrap.sh`. A missing fixture fails;
   `.qa-fixtures/qa-kit` is separate from production control checkouts.
 - Live check: run compliance against any active manifest repo and expect
   a JSON verdict line on stdout's last line.
@@ -49,6 +51,11 @@ because its macOS packages require GitHub's non-portable hosted-toolcache path.
   and BeanMind retain their separately qualified profiles. The existing reusable
   workflow retains its legacy checker/fixture pins and old QA manifest for every
   cohort except the explicitly qualified Agency bootstrap described above.
+- The inactive Mac pilot adapter supports only reviewed main pushes for the
+  two fixed pilot repositories, with exact new repo-scoped runner names,
+  macOS/ARM64 runtime variants, full central CI selection and source/event guards.
+  It grants no PR/fork or registration authority. A separately published workflow,
+  bundle and per-repo registration are required before adoption.
 
 ## Review rules
 Binding contract: `../qa-kit/README.md`.

@@ -69,7 +69,8 @@ class TestQualificationWorkflow(unittest.TestCase):
         self.assertIn("repository: stevekkall-beansgc/qa-kit", workflow)
         self.assertIn("ref: v0.7.0", workflow)
         self.assertIn("path: .qa-fixtures/qa-kit", workflow)
-        self.assertIn("python3 -m unittest discover -s integration -v", workflow)
+        self.assertIn("bash setup/qa-validation/bootstrap.sh", workflow)
+        self.assertIn("bash scripts/test_validation_e2e.sh", workflow)
         self.assertNotIn("continue-on-error", workflow)
 
 
@@ -159,6 +160,72 @@ class TestCIContext(unittest.TestCase):
                                        "base": {"repo": {"full_name": self.repository}}}}
         with self.assertRaises(ValueError):
             self.check()
+
+
+class TestMacPilotContext(TestCIContext):
+    def setUp(self):
+        super().setUp()
+        self.repository = "stevekkall-beansgc/legume-labs"
+        self.variant = "macos-arm64-py312"
+        self.environ.update(RUNNER_ENVIRONMENT="self-hosted", RUNNER_OS="macOS",
+                            RUNNER_ARCH="ARM64", RUNNER_NAME="beans-macbook-legume-labs-validation",
+                            GATE_REPOSITORY=self.repository, GATE_EVENT_REPOSITORY=self.repository)
+        self.event["repository"]["full_name"] = self.repository
+
+    def check(self):
+        return self.gate.validate_ci_context(self.environ, self.event, self.repository,
+                                             self.sha, self.variant)
+
+    def test_fork_pr_is_hosted_exact_head_only(self):
+        self.environ.update(GATE_EVENT_NAME="pull_request", GATE_REF="refs/pull/8/merge")
+        self.event = {"repository": {"full_name": self.repository}, "number": 8,
+                      "pull_request": {"head": {"sha": self.sha},
+                                       "base": {"repo": {"full_name": self.repository}}}}
+        with self.assertRaises(ValueError):
+            self.check()
+
+    def test_local_or_self_hosted_cannot_claim_initial_ci_profile(self):
+        for value in ("local", ""):
+            self.environ["RUNNER_ENVIRONMENT"] = value
+            with self.assertRaises(ValueError):
+                self.check()
+
+    def test_name_os_arch_and_variant_are_closed_bindings(self):
+        for key, value in (("RUNNER_NAME", "beans-macbook-beanfit"), ("RUNNER_OS", "Linux"),
+                           ("RUNNER_ARCH", "X64"), ("GATE_REF", "refs/heads/release/test")):
+            with self.subTest(key=key):
+                old = self.environ[key]
+                self.environ[key] = value
+                with self.assertRaises(ValueError):
+                    self.check()
+                self.environ[key] = old
+        self.variant = "linux-py312"
+        with self.assertRaises(ValueError):
+            self.check()
+
+    def test_separate_app_runner_and_full_variant_are_required(self):
+        self.repository = "stevekkall-beansgc/beanfit-app"
+        self.environ.update(GATE_REPOSITORY=self.repository, GATE_EVENT_REPOSITORY=self.repository,
+                            RUNNER_NAME="beans-macbook-beanfit-app-validation")
+        self.event["repository"]["full_name"] = self.repository
+        self.variant = "macos-arm64-node22-py312"
+        self.assertEqual(self.check()["runner_name"], "beans-macbook-beanfit-app-validation")
+
+    def test_precheckout_cli_uses_fixed_alias_and_rejects_fork_without_tasks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            event = Path(directory) / "event.json"
+            event.write_text(json.dumps(self.event))
+            environment = {**os.environ, **self.environ, "GITHUB_EVENT_PATH": str(event),
+                           "GATE_REPO": "bean-labs"}
+            command = [sys.executable, "-I", str(Path(__file__).resolve().parents[1] / "bin/check_ci_context.py")]
+            result = subprocess.run(command, env=environment, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse(json.loads(result.stdout)["github_check_verified"])
+            for key, value in (("GATE_REPO", "agency"), ("GATE_EVENT_NAME", "pull_request"),
+                               ("RUNNER_NAME", "beans-macbook-beanfit")):
+                changed = {**environment, key: value}
+                result = subprocess.run(command, env=changed, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
 
 
 class TestTrustedControls(unittest.TestCase):

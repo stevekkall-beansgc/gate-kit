@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gate authority boundary for the QA-owned composable validation executor.
 
-Initial enrolled CI supports disposable GitHub-hosted push/PR execution only.
+Enrolled CI supports hosted push/PR and two fixed, main-push Mac pilot routes.
 Execution context is not proof of a successful GitHub check. Existing protected
 canonical profiles remain on their separately qualified legacy checker.
 """
@@ -18,6 +18,19 @@ from pathlib import Path
 
 CONTRACT_VERSION = "1.0"
 HERE = Path(__file__).resolve().parents[1]
+
+# This is a closed control-source policy, never a caller-selected label. The
+# inactive adapter cannot enroll or register these runners on its own.
+MAC_ROUTES = {
+    "stevekkall-beansgc/legume-labs": {
+        "repo": "bean-labs",
+        "runner_name": "beans-macbook-legume-labs-validation",
+        "variant": "macos-arm64-py312"},
+    "stevekkall-beansgc/beanfit-app": {
+        "repo": "beanfit-app",
+        "runner_name": "beans-macbook-beanfit-app-validation",
+        "variant": "macos-arm64-node22-py312"},
+}
 
 
 class AdapterCancelled(Exception):
@@ -100,17 +113,17 @@ def read_trusted_json(path, trusted_root, expected_digest):
     return value
 
 
-def validate_ci_context(environ, event, repository, expected_head):
+def validate_ci_context(environ, event, repository, expected_head, variant=None):
     """Validate runner/event identity before allowing an enrolled CI task."""
     if (not re.fullmatch(r"[0-9a-f]{40}", expected_head or "")
             or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository or "")
             or not isinstance(event, dict)):
         raise ValueError("invalid enrolled source identity")
-    if (environ.get("RUNNER_ENVIRONMENT") != "github-hosted"
-            or environ.get("GITHUB_ACTIONS") != "true"
+    runner = environ.get("RUNNER_ENVIRONMENT")
+    if (environ.get("GITHUB_ACTIONS") != "true"
             or not re.fullmatch(r"[1-9][0-9]*", environ.get("GITHUB_RUN_ID", ""))
             or not re.fullmatch(r"[1-9][0-9]*", environ.get("GITHUB_RUN_ATTEMPT", ""))):
-        raise ValueError("enrolled CI requires the initial hosted profile")
+        raise ValueError("enrolled CI requires Actions execution metadata")
     event_repository = event.get("repository")
     if (not isinstance(event_repository, dict)
             or environ.get("GATE_REPOSITORY") != repository
@@ -120,6 +133,15 @@ def validate_ci_context(environ, event, repository, expected_head):
         raise ValueError("enrolled repository or source mismatch")
 
     name, ref = environ.get("GATE_EVENT_NAME"), environ.get("GATE_REF", "")
+    if runner == "self-hosted":
+        route = MAC_ROUTES.get(repository)
+        if (route is None or name != "push" or ref != "refs/heads/main"
+                or environ.get("RUNNER_NAME") != route["runner_name"]
+                or environ.get("RUNNER_OS") != "macOS" or environ.get("RUNNER_ARCH") != "ARM64"
+                or variant != route["variant"]):
+            raise ValueError("self-hosted CI is outside the qualified pilot route")
+    elif runner != "github-hosted":
+        raise ValueError("unsupported CI runner profile")
     if name == "push":
         if (not ref.startswith("refs/heads/") or len(ref) <= len("refs/heads/")
                 or event.get("ref") != ref or event.get("after") != expected_head
@@ -140,6 +162,8 @@ def validate_ci_context(environ, event, repository, expected_head):
     return {"event": name, "repository": repository, "ref": ref,
             "expected_head": expected_head, "run_id": environ["GITHUB_RUN_ID"],
             "run_attempt": environ["GITHUB_RUN_ATTEMPT"],
+            "runner_environment": runner, "runner_name": environ.get("RUNNER_NAME"),
+            "runner_os": environ.get("RUNNER_OS"), "runner_arch": environ.get("RUNNER_ARCH"),
             "github_check_verified": False}
 
 
@@ -253,8 +277,12 @@ def run_enrolled(*, root, repo, qa_root, controls_root, controls_commit,
         raise ValueError("malformed required selection")
     ci_context = None
     if context == "ci":
-        ci_context = validate_ci_context(os.environ if environ is None else environ, event,
-                                         policy.get("github_repository"), expected_head)
+        authority = os.environ if environ is None else environ
+        if (authority.get("RUNNER_ENVIRONMENT") == "self-hosted"
+                and repo != MAC_ROUTES.get(policy.get("github_repository"), {}).get("repo")):
+            raise ValueError("Mac pilot alias differs from the reviewed repository")
+        ci_context = validate_ci_context(authority, event,
+                                         policy.get("github_repository"), expected_head, variant)
     qa_root = verify_checkout(qa_root, control.get("qa_commit"))
     if not isinstance(control.get("adapters"), dict):
         raise ValueError("trusted adapter identities are missing")
