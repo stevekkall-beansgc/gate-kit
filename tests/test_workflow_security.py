@@ -57,7 +57,7 @@ class TestWorkflowSecurityCheck(unittest.TestCase):
     def test_third_party_actions_use_sha_pins_and_internal_caller_uses_annotated_tag(self):
         checkout = "actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8"
         self.assertEqual(COMPLIANCE.count(checkout), 4)
-        self.assertEqual(TEST.count(checkout), 2)
+        self.assertEqual(TEST.count(checkout), 4)
         self.assertIn(
             "actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c",
             COMPLIANCE,
@@ -88,11 +88,23 @@ class TestWorkflowSecurityCheck(unittest.TestCase):
         )
 
     def test_checkouts_do_not_persist_credentials_and_callers_are_read_only(self):
-        for workflow, count in ((COMPLIANCE, 4), (TEST, 2), (WORKFLOW, 1)):
+        for workflow, count in ((COMPLIANCE, 4), (TEST, 4), (WORKFLOW, 1)):
             self.assertEqual(workflow.count("persist-credentials: false"), count)
             self.assertEqual(workflow.count("uses: actions/checkout@"), count)
         for workflow in (TEST, GATE):
             self.assertIn("permissions:\n  contents: read", workflow.split("jobs:", 1)[0])
+
+    def test_local_task_job_is_main_push_only_and_guarded_before_checkout(self):
+        local = TEST.split("\n  local-validate:\n", 1)[1]
+        self.assertIn("if: github.event_name == 'push' && github.ref == 'refs/heads/main'", local)
+        self.assertIn("github.repository == 'stevekkall-beansgc/gate-kit'", local)
+        self.assertIn("github.event.repository.full_name == github.repository", local)
+        self.assertIn("runs-on: [self-hosted, macOS, ARM64, beans-mac]", local)
+        self.assertLess(local.index("Verify trusted main push before checkout"), local.index("uses: actions/checkout@"))
+        self.assertIn('test "$RUNNER_NAME" = beans-macbook-gate-kit', local)
+        self.assertIn('test "$GATE_PUSH_AFTER" = "$GATE_EXPECTED_SHA"', local)
+        self.assertIn('PATH="/opt/homebrew/opt/python@3.12/libexec/bin:$PATH" task validate', local)
+        self.assertNotIn("pull_request", local)
 
     def test_documented_scope_severity_policy_and_reproduction_are_public(self):
         for text in (CONTRIBUTING, README):

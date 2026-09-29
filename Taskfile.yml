@@ -1,0 +1,14 @@
+version: '3'
+
+tasks:
+  validate:
+    desc: Run Gate Kit's existing deterministic checks with Python 3.12
+    preconditions:
+      - sh: python3 -c 'import sys; sys.exit(sys.version_info[:2] != (3, 12))'
+        msg: Python 3.12 must be available as python3
+    cmds:
+      - python3 -m py_compile bin/compliance.py
+      - python3 -m unittest discover -s tests -v
+      - bash setup/qa-validation/bootstrap.sh
+      - bash scripts/test_validation_e2e.sh
+      - python3 scripts/check_stdlib.py bin/
