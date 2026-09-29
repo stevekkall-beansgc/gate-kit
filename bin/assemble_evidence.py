@@ -35,6 +35,23 @@ def load(path):
     return value
 
 
+def workflow_identity(env, row, head):
+    """Reject an unapproved caller/job before shared task execution."""
+    caller_ref = env.get("GITHUB_WORKFLOW_REF", "")
+    job_ref = env.get("GATE_JOB_WORKFLOW_REF", "")
+    job_sha = env.get("GATE_JOB_WORKFLOW_SHA", "")
+    if (caller_ref != row["github_repository"] + "/.github/workflows/gate.yml@refs/heads/main"
+            or env.get("GITHUB_WORKFLOW_SHA") != head
+            or env.get("GITHUB_JOB") != "compliance"
+            or env.get("GATE_JOB_WORKFLOW_REPOSITORY") != "stevekkall-beansgc/gate-kit"
+            or env.get("GATE_JOB_WORKFLOW_PATH") != ".github/workflows/validation.yml"
+            or not re.fullmatch(r"stevekkall-beansgc/gate-kit/\.github/workflows/validation\.yml@(?:refs/tags/)?v[0-9]+\.[0-9]+\.[0-9]+", job_ref)
+            or not re.fullmatch(r"[0-9a-f]{40}", job_sha)
+            or not re.fullmatch(r"[1-9][0-9]*", env.get("GATE_JOB_CHECK_RUN_ID", ""))):
+        raise ValueError("workflow identity metadata is absent or inconsistent")
+    return caller_ref, job_ref, job_sha
+
+
 def assemble(directory, policy_path, repo, runtime_root, environ=None):
     env = os.environ if environ is None else environ
     directory = Path(directory)
@@ -84,17 +101,7 @@ def assemble(directory, policy_path, repo, runtime_root, environ=None):
                 or identity.get("before", {}).get("dirty") is not False
                 or identity.get("after") != identity.get("before")):
             raise ValueError("execution fixture source mismatch")
-    caller_ref = env.get("GITHUB_WORKFLOW_REF", "")
-    job_ref = env.get("GATE_JOB_WORKFLOW_REF", "")
-    job_sha = env.get("GATE_JOB_WORKFLOW_SHA", "")
-    if (caller_ref != row["github_repository"] + "/.github/workflows/gate.yml@refs/heads/main"
-            or env.get("GITHUB_WORKFLOW_SHA") != head
-            or env.get("GATE_JOB_WORKFLOW_REPOSITORY") != "stevekkall-beansgc/gate-kit"
-            or env.get("GATE_JOB_WORKFLOW_PATH") != ".github/workflows/validation.yml"
-            or not re.fullmatch(r"stevekkall-beansgc/gate-kit/\.github/workflows/validation\.yml@(?:refs/tags/)?v[0-9]+\.[0-9]+\.[0-9]+", job_ref)
-            or not re.fullmatch(r"[0-9a-f]{40}", job_sha)
-            or not re.fullmatch(r"[1-9][0-9]*", env.get("GATE_JOB_CHECK_RUN_ID", ""))):
-        raise ValueError("workflow identity metadata is absent or inconsistent")
+    caller_ref, job_ref, job_sha = workflow_identity(env, row, head)
     controls = dict(expected)
     controls["fixtures"] = fixtures
     for key in ("registry_sha256", "authorization_sha256", "contract_sha256"):

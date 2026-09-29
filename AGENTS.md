@@ -55,7 +55,10 @@ because its macOS packages require GitHub's non-portable hosted-toolcache path.
   two fixed pilot repositories, with exact new repo-scoped runner names,
   macOS/ARM64 runtime variants, full central CI selection and source/event guards.
   It grants no PR/fork or registration authority. A separately published workflow,
-  bundle and per-repo registration are required before adoption.
+  bundle, per-repo registration and independently qualified global job admission
+  are required before adoption. Labels and a workflow selector alone cannot
+  constrain other workflows; a failed start hook may still permit conditional
+  steps. Keep the new pilot listeners offline until admission is qualified.
 
 ## Review rules
 Binding contract: `../qa-kit/README.md`.

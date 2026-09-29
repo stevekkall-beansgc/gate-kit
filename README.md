@@ -124,7 +124,9 @@ remain as before. [The adapter contract](VALIDATION-ADAPTER.md) describes prepar
 strict fixture tests, evidence limits, and the staged workflow adoption boundary.
 
 The separately qualified Mac pilot policy is inactive until a reviewed control
-bundle, workflow and repository-scoped runner registration are adopted. It
+bundle, workflow, repository-scoped runner registration and independently
+qualified global job admission are adopted. Repository labels and this
+workflow's selector alone do not constrain other public-repository workflows. It
 accepts only exact main pushes for the two fixed pilot repositories and named
 macOS/ARM64 runners; PRs and forks retain hosted execution. Prepare the real
 published QA fixture with `bash setup/qa-validation/bootstrap.sh`, then run the

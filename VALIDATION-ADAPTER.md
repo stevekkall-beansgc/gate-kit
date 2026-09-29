@@ -57,7 +57,12 @@ in context `ci`. Runner labels alone confer no authority. This source release
 does not register runners or enroll either repository. The later workflow must
 apply the same trusted guard before candidate checkout, and independent actual
 GitHub job/readback must prove the repository-scoped runner and exact candidate.
-Private/fork PRs never select this persistent-machine route. Existing Linux tasks
+The selector constrains this workflow only. Public repository runner labels do
+not prevent another workflow from requesting that runner. Adoption also requires
+independently qualified global job admission that prevents unauthorized workflows
+from executing any step. A failed job-started hook alone is insufficient if later
+`always()` or failure steps can still run. Until that boundary is qualified,
+pilot listeners remain offline and no dispatch occurs. Existing Linux tasks
 and any normative Linux coverage remain separately recorded; Mac is not a Linux
 cell or a release-context substitute.
 
@@ -145,3 +150,43 @@ blocking dependents, retained docs failure, incomplete variants, bad bundle
 digests, hidden control edits, cancellation cleanup, same-host local/CI comparison
 and artifact overwrite prevention. Synthetic success
 does not establish product or fleet acceptance.
+
+## Fixed workflow evidence
+
+The separately published validation workflow has one repository input. Its
+tracked `.github/validation-policy.json` fixes the earlier published controls,
+executor and Gate runtime, complete CI selection, variant, fixture commits and
+bundle/registry/authorization/contract digests. Callers cannot override these.
+The canonical main-push caller is `.github/workflows/gate.yml`, with job
+`compliance`; the external check remains `compliance / compliance`.
+
+`bin/run_workflow_validation.py` verifies the exact workflow source and approved
+caller/job metadata before executing tasks. It invokes the already published
+Gate bridge sequentially in local and CI contexts, compares their complete
+same-host receipts, then delegates sanitized evidence assembly to
+`bin/assemble_evidence.py`. QA remains the only task planner/executor. Nested
+cancellation permits the bridge and QA to finish bounded task-group cleanup.
+No passing provenance is produced when either run or comparison fails.
+
+The success artifact contains exactly four root files:
+
+- `local-envelope.json` and `ci-envelope.json`: sanitized Gate/shared receipts;
+- `parity.json`: recomputed same-host comparison;
+- `gate-provenance.json`: schema
+  `gate-kit.actions-validation-provenance/v1`, exact caller/reusable source,
+  candidate/run/attempt/check/runner identity, fixed controls and hashes of the
+  three receipts.
+
+The artifact is named `gate-validation-RUN_ID-RUN_ATTEMPT`, with overwrite
+disabled. The trusted upload step records exactly one
+`GATE_ARTIFACT_RECEIPT` JSON marker containing the immutable artifact ID, SHA256
+digest, name, run ID and attempt. Agency binds this marker from the authenticated
+canonical job log to the authenticated artifact API/download and separately
+published immutable workflow binding. Artifact name alone cannot establish job
+ownership. Local receipts always retain `github_check_verified: false`;
+independent API evidence establishes actual GitHub success.
+
+Workflow source publication, runner registration and synthetic qualification are
+separate from enrollment and actual pilot acceptance. The fixed workflow is
+published only after its earlier control/runtime sources exist; the independent
+workflow-binding manifest is published afterward, avoiding circular source pins.
