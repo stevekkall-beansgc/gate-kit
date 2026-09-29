@@ -7,6 +7,8 @@ Deterministic PR/push compliance gates for Legume Labs repos.
   per-repo `.github/workflows/gate.yml` stubs pinned to a version tag).
 - `bin/compliance.py` — same gate locally:
   `python3 bin/compliance.py --repo <name> [--root <checkout>] [--full] [--markdown]`
+- `bin/validation_adapter.py` — additive bridge to QA's common executor for
+  explicitly enrolled validation; see `VALIDATION-ADAPTER.md`.
 
 The eligible fleet is explicit: manifest rows with status `active` or
 `unit-only`. CI passes the caller checkout with `--root caller`; missing
@@ -14,7 +16,10 @@ registry infrastructure, repo roots, or required entrypoints fail closed.
 
 The reusable workflow executes the unchanged CLI from immutable `v0.4.4`
 and the manifest from qa-kit `v0.6.6`, with the BeanFit CLI fixture pinned
-to immutable `v0.4.0`. Workflow-only releases can keep the
+to immutable `v0.4.0`. The explicitly qualified Agency legacy cohort alone uses
+qa-kit `v0.7.0` for its conditional public executor-fixture bootstrap; it remains
+unenrolled and retains all manifest-owned unit/full commands and runner guards.
+Workflow-only releases can keep the
 released CLI pin when its contract is unchanged. Callers pin an immutable
 workflow release; never publish a workflow that checks out `main`.
 
@@ -27,6 +32,9 @@ because its macOS packages require GitHub's non-portable hosted-toolcache path.
 ## Test commands
 - Syntax pin: `python3 -m py_compile bin/compliance.py`
 - Regression suite: `python3 -m unittest discover -s tests -v`
+- Shared-executor integration: with the pinned QA fixture prepared,
+  `python3 -m unittest discover -s integration -v`. A missing fixture fails;
+  `.qa-fixtures/qa-kit` is separate from production control checkouts.
 - Live check: run compliance against any active manifest repo and expect
   a JSON verdict line on stdout's last line.
 
@@ -35,6 +43,12 @@ because its macOS packages require GitHub's non-portable hosted-toolcache path.
   NEVER silently pass on infrastructure errors.
 - Check names are the API: never rename gates casually.
 - Version tags only — callers pin @vX.Y.Z; main moves freely.
+- Enrollment requires an exact trusted control commit and bundle digest. The
+  new bridge preserves the existing docs check and rejects partial coverage as
+  full compliance. Initial enrolled CI is hosted push/PR only; protected agents
+  and BeanMind retain their separately qualified profiles. The existing reusable
+  workflow retains its legacy checker/fixture pins and old QA manifest for every
+  cohort except the explicitly qualified Agency bootstrap described above.
 
 ## Review rules
 Binding contract: `../qa-kit/README.md`.

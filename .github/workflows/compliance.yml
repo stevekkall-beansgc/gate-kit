@@ -236,7 +236,9 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           repository: stevekkall-beansgc/qa-kit
-          ref: v0.6.6
+          # Agency's reviewed bootstrap prepares the immutable shared-QA
+          # fixture before its adapter suite. Other legacy cohorts stay pinned.
+          ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || 'v0.6.6' }}
           path: qa-kit
           persist-credentials: false
       # BeanFit App's local E2E drives the BeanFit CLI. Keep the fixture

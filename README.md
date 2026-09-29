@@ -110,3 +110,15 @@ python3 -m unittest discover -s tests -q
 ```
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the exact syntax and standard-library checks, review steps, pinned report-only workflow scan, severity policy, and explicit security-scope limitations.
+
+## Composable validation adapter
+
+[`bin/validation_adapter.py`](bin/validation_adapter.py) adds an explicitly
+enrolled bridge to QA Kit's shared executor. It verifies pinned control sources,
+GitHub event/repository/head identity, and required coverage while retaining the
+existing documentation check. Installing it does not enroll a repository. The
+Agency legacy cohort alone uses the published QA `v0.7.0` manifest so its reviewed
+conditional setup can prepare the public executor fixture. Every other legacy
+cohort retains QA `v0.6.6`; checker/fixture pins, full coverage and runner guards
+remain as before. [The adapter contract](VALIDATION-ADAPTER.md) describes preparation,
+strict fixture tests, evidence limits, and the staged workflow adoption boundary.

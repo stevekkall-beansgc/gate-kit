@@ -184,7 +184,7 @@ class TestWorkflowContract(unittest.TestCase):
                     ".github/workflows/compliance.yml").read_text()
         self.assertIn("path: gate-kit", workflow)
         self.assertIn("ref: v0.4.4", workflow)
-        self.assertIn("ref: v0.6.6", workflow)
+        self.assertIn("ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || 'v0.6.6' }}", workflow)
         self.assertIn("ref: v0.4.0", workflow)
         self.assertIn("python3 gate-kit/bin/compliance.py", workflow)
         self.assertIn("--root caller", workflow)
@@ -249,7 +249,12 @@ class TestWorkflowContract(unittest.TestCase):
             checkout = checkout.split("path:", 1)[0]
             match = re.search(r"\n\s+ref:\s*(\S+)", checkout)
             self.assertIsNotNone(match)
-            self.assertIn(f"`{match.group(1)}`", readme)
+            if repository == "stevekkall-beansgc/qa-kit":
+                self.assertIn("ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || 'v0.6.6' }}", checkout)
+                for ref in ("v0.7.0", "v0.6.6"):
+                    self.assertIn(f"`{ref}`", readme)
+            else:
+                self.assertIn(f"`{match.group(1)}`", readme)
         self.assertIn("The earlier `v0.4.20` workflow used QA manifest `v0.6.1`", readme)
         self.assertIn("immutable `v0.4.4`", readme)
         self.assertIn("not a claim about release recency", readme)
