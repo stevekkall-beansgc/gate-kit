@@ -29,3 +29,45 @@ jobs:
       - run: bash setup/qa-validation/bootstrap.sh
       - run: bash scripts/test_validation_e2e.sh
       - run: python3 scripts/check_stdlib.py bin/
+
+  local-validate:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'stevekkall-beansgc/gate-kit' && github.event.repository.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64, beans-mac]
+    timeout-minutes: 30
+    steps:
+      - name: Verify trusted main push before checkout
+        env:
+          GATE_EVENT_NAME: ${{ github.event_name }}
+          GATE_REPOSITORY: ${{ github.repository }}
+          GATE_EVENT_REPOSITORY: ${{ github.event.repository.full_name }}
+          GATE_REF: ${{ github.ref }}
+          GATE_PUSH_AFTER: ${{ github.event.after }}
+          GATE_EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$GATE_EVENT_NAME" = push
+          test "$GATE_REPOSITORY" = stevekkall-beansgc/gate-kit
+          test "$GATE_EVENT_REPOSITORY" = "$GATE_REPOSITORY"
+          test "$GATE_REF" = refs/heads/main
+          test "$GATE_PUSH_AFTER" = "$GATE_EXPECTED_SHA"
+          test "$RUNNER_NAME" = beans-macbook-gate-kit
+          test "$RUNNER_ENVIRONMENT" = self-hosted
+          test "$RUNNER_OS" = macOS
+          test "$RUNNER_ARCH" = ARM64
+          test -x /opt/homebrew/opt/python@3.12/libexec/bin/python3
+          command -v task
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Prepare immutable shared executor fixture
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          repository: stevekkall-beansgc/qa-kit
+          ref: v0.7.0
+          path: .qa-fixtures/qa-kit
+          persist-credentials: false
+      - name: Run deterministic Gate Kit checks
+        run: |
+          set -euo pipefail
+          PATH="/opt/homebrew/opt/python@3.12/libexec/bin:$PATH" task validate

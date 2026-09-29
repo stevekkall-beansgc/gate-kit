@@ -30,6 +30,8 @@ use the Mac's preinstalled `python3`; do not invoke `actions/setup-python` there
 because its macOS packages require GitHub's non-portable hosted-toolcache path.
 
 ## Test commands
+- Complete deterministic repo checks: with Task 3 and `python3` resolving to
+  Python 3.12, run `task validate`. It wraps the existing commands below.
 - Syntax pin: `python3 -m py_compile bin/compliance.py`
 - Regression suite: `python3 -m unittest discover -s tests -v`
 - Shared-executor integration: with the pinned QA fixture prepared,

@@ -130,3 +130,10 @@ macOS/ARM64 runners; PRs and forks retain hosted execution. Prepare the real
 published QA fixture with `bash setup/qa-validation/bootstrap.sh`, then run the
 owned E2E entrypoint `bash scripts/test_validation_e2e.sh`. Preparation refuses
 dirty or drifted existing fixtures without resetting them.
+
+With Task 3 installed and `python3` resolving to Python 3.12, run
+`task validate` for this repository's existing syntax, unit, public fixture,
+shared-executor integration, and standard-library checks. The new local
+`local-validate` GitHub job runs it only for trusted `main` pushes on Gate Kit's
+existing repository-scoped Mac runner. Pull requests continue to use the hosted
+`unittest` job; the reusable compliance workflow and its caller pins are unchanged.
