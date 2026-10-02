@@ -17,8 +17,13 @@ on:
         type: string
         default: ubuntu-latest
 
+permissions:
+  contents: read
+
 jobs:
   compliance:
+    permissions:
+      contents: read
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.repo == 'agents' && 270 || 15 }}
     steps:
