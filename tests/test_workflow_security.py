@@ -17,6 +17,29 @@ README = (ROOT / "README.md").read_text()
 
 
 class TestWorkflowSecurityCheck(unittest.TestCase):
+    def test_provenance_separates_local_freeze_from_release_linux_proof(self):
+        provenance = " ".join((ROOT / "WORKFLOW-SECURITY-PROVENANCE.md").read_text().split())
+        for requirement in (
+                "At the 2026-10-02 local candidate freeze",
+                "had not yet run on GitHub",
+                "The macOS binary scan does not qualify it",
+                "Each release requires Linux execution evidence",
+                "exact commit", "pinned image digest", "scanner version",
+                "process exit status", "auditor JSON",
+                "Until release-specific evidence is recorded",
+                "Linux qualification for that release remains unverified"):
+            self.assertIn(requirement, provenance)
+        self.assertNotIn("The added Linux container step has not run on GitHub", provenance)
+
+    def test_auditor_json_enumeration_keeps_offline_report_only_boundary(self):
+        enumeration = WORKFLOW.split('      - name: Enumerate findings', 1)[1]
+        for flag in ('--persona=auditor', '--format=json', '--offline', '--network none',
+                     '--no-online-audits', '--no-exit-codes', '--color=never'):
+            self.assertIn(flag, enumeration)
+        self.assertIn('--volume "$GITHUB_WORKSPACE:/workspace:ro"', enumeration)
+        self.assertIn('ghcr.io/zizmorcore/zizmor:1.28.0@sha256:8e6b3e4fb74d1aa5d23e83ea369f386c66eced0d1fb944d32cd8b2aac100b00d', enumeration)
+        self.assertNotIn('|| true', enumeration)
+
     def test_workflow_uses_pinned_offline_container_without_action_or_token(self):
         self.assertIn(
             "uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0",

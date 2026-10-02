@@ -1,5 +1,8 @@
 # Contributing to gate-kit
 
+See [workflow scanner provenance](WORKFLOW-SECURITY-PROVENANCE.md) for the
+exact pin exception, historical suppression-count limits, and auditor JSON route.
+
 This guide is self-contained: it uses only this public repository, Python's standard library, and optional public tooling. It does not depend on a private guide, workspace, registry, credential, or service.
 
 ## Prerequisites
