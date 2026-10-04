@@ -8,12 +8,15 @@ Missing configuration and failed commands are failures, not silent passes.
 The gate is advisory on the Free-tier CI platform; it is not security
 certification or a deployment system.
 
+Start here: [Try the synthetic demo](#try-the-synthetic-demo).
+
 ## The gate at a glance
 
-![Trusted manifest and checkout inputs must exist. Missing inputs produce an infrastructure failure; available inputs select documentation and owned checks and produce a JSON verdict.](assets/readme-flow.svg)
+![Local CLI and an immutable reusable GitHub Actions workflow converge on the same compliance checker. QA Kit supplies a pinned manifest while the caller supplies the checkout. Docs, setup and unit checks are standard; full mode adds the registered E2E. Missing infrastructure fails and workflow pins are distinct from checker pins.](assets/readme-methods.svg)
 
-The same checker reports local or configured CI outcomes. Missing infrastructure is a failure, not a silent pass.
-[Full-size diagram](assets/readme-flow.svg) · [Editable source](assets/readme-flow.mmd).
+Local and CI entry points use explicit controls: caller source, QA manifest and checker code are distinct identities. Missing infrastructure fails; full mode adds only registered E2E coverage. [Checker](bin/compliance.py) · [Reusable workflow](.github/workflows/compliance.yml).
+
+[Full-size diagram and editable SVG source](assets/readme-methods.svg).
 
 ## Try the synthetic demo
 

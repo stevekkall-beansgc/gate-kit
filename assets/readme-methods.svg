@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="1110" viewBox="0 0 980 1110" role="img" aria-labelledby="title desc">
+<title id="title">Gate Kit: One check contract, two entry points.</title>
+<desc id="desc">Local CLI and an immutable reusable GitHub Actions workflow converge on the same compliance checker. QA Kit supplies a pinned manifest while the caller supplies the checkout. Docs, setup and unit checks are standard; full mode adds the registered E2E. Missing infrastructure fails and workflow pins are distinct from checker pins.</desc>
+<!-- Editable source diagram. Shapes are explanatory, not a deployment or performance receipt. -->
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M1 1 L7 4 L1 7" fill="none" stroke="context-stroke" stroke-width="1.8"/></marker></defs>
+<rect width="980" height="100%" fill="#f8fafc"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="38" y="44" font-size="19" font-weight="700" fill="#0e756a" text-anchor="start">GATE KIT / HOW IT WORKS</text>
+<text x="38" y="100" font-size="39" font-weight="700" fill="#152d45" text-anchor="start">One check contract, two entry points.</text>
+<text x="38" y="138" font-size="22" font-weight="400" fill="#4e6276" text-anchor="start">Local inspection and configured CI converge on explicit, pinned controls.</text>
+<rect x="38" y="195" width="438" height="155" rx="16" fill="#edf4fd" stroke="#d6e2ec" stroke-width="2"/>
+<rect x="38" y="211" width="5" height="123" rx="2" fill="#245fa5"/>
+<text x="60" y="225" font-size="18" font-weight="700" fill="#245fa5" text-anchor="start">SOURCE WORKFLOW</text>
+<text x="60" y="255" font-size="24" font-weight="700" fill="#245fa5" text-anchor="start">Local CLI</text>
+<text x="60" y="295.6" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">compliance.py --repo … --root …</text>
+<text x="60" y="331" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">Operator selects the checkout</text>
+<rect x="504" y="195" width="438" height="155" rx="16" fill="#eaf6f2" stroke="#d6e2ec" stroke-width="2"/>
+<rect x="504" y="211" width="5" height="123" rx="2" fill="#0e756a"/>
+<text x="526" y="225" font-size="18" font-weight="700" fill="#0e756a" text-anchor="start">WHERE CONFIGURED</text>
+<text x="526" y="255" font-size="24" font-weight="700" fill="#0e756a" text-anchor="start">GitHub Actions caller</text>
+<text x="526" y="295.6" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">gate.yml → reusable workflow</text>
+<text x="526" y="331" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">Immutable version pin + event SHA</text>
+<polyline points="258,350 258,384 490,384 490,416" fill="none" stroke="#245fa5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="723,350 723,384 490,384" fill="none" stroke="#0e756a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="38" y="417" width="904" height="242" rx="16" fill="white" stroke="#d5e0ea" stroke-width="2"/>
+<text x="60" y="456" font-size="26" font-weight="700" fill="#245fa5" text-anchor="start">Three different identities—not one moving “latest”</text>
+<rect x="60" y="483" width="272" height="155" rx="16" fill="#f0f3f7" stroke="#d6e2ec" stroke-width="2"/>
+<rect x="60" y="499" width="5" height="123" rx="2" fill="#4e6276"/>
+<text x="82" y="513" font-size="24" font-weight="700" fill="#4e6276" text-anchor="start">Caller source</text>
+<text x="82" y="553.6" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">Checkout under test</text>
+<text x="82" y="589" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">Exact CI event SHA</text>
+<rect x="354" y="483" width="272" height="155" rx="16" fill="#f0f3f7" stroke="#d6e2ec" stroke-width="2"/>
+<rect x="354" y="499" width="5" height="123" rx="2" fill="#4e6276"/>
+<text x="376" y="513" font-size="24" font-weight="700" fill="#4e6276" text-anchor="start">QA manifest</text>
+<text x="376" y="553.6" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">Setup / test</text>
+<text x="376" y="583" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">commands</text>
+<text x="376" y="618.4" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">Separate control pin</text>
+<rect x="648" y="483" width="272" height="155" rx="16" fill="#f0f3f7" stroke="#d6e2ec" stroke-width="2"/>
+<rect x="648" y="499" width="5" height="123" rx="2" fill="#4e6276"/>
+<text x="670" y="513" font-size="24" font-weight="700" fill="#4e6276" text-anchor="start">Checker code</text>
+<text x="670" y="553.6" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">Gate implementation</text>
+<text x="670" y="589" font-size="21" font-weight="400" fill="#152d45" text-anchor="start">Separate CLI pin</text>
+<polyline points="490,659 490,696" fill="none" stroke="#245fa5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="38" y="697" width="904" height="133" rx="16" fill="#edf4fd" stroke="#d6e2ec" stroke-width="2"/>
+<text x="60" y="736" font-size="26" font-weight="700" fill="#245fa5" text-anchor="start">Docs → setup → unit checks</text>
+<text x="60" y="775" font-size="22" font-weight="400" fill="#152d45" text-anchor="start">--full adds the repository’s registered end-to-end command.</text>
+<text x="60" y="810" font-size="22" font-weight="700" fill="#a63842" text-anchor="start">Missing manifest, checkout or required entrypoint → FAIL.</text>
+<rect x="38" y="865" width="904" height="124" rx="16" fill="#152d45" stroke="#152d45" stroke-width="2"/>
+<text x="60" y="905" font-size="25" font-weight="700" fill="white" text-anchor="start">JSON verdict + exit status + optional Markdown</text>
+<text x="60" y="946" font-size="22" font-weight="400" fill="#d8e5f2" text-anchor="start">Inspect what ran; no deployment or security certification follows.</text>
+<polyline points="38,1004 942,1004" fill="none" stroke="#d5e0ea" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="38" y="1034" font-size="20" font-weight="400" fill="#4e6276" text-anchor="start">A workflow release can retain an older checker pin; inspect both identities.</text>
+<text x="38" y="1062" font-size="20" font-weight="400" fill="#4e6276" text-anchor="start">CI is advisory on this platform. Opt-in adapters do not enroll a repository by themselves.</text>
+</g>
+</svg>
