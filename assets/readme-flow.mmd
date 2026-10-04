@@ -1,0 +1,8 @@
+flowchart TD
+  accTitle: The gate at a glance
+  accDescr: Trusted manifest and checkout inputs must exist. Missing inputs produce an infrastructure failure; available inputs select documentation and owned checks and produce a JSON verdict.
+  A["Trusted manifest and checkout"] --> B{"Inputs available?"}
+  B -->|"No"| C["Infrastructure failure"]
+  B -->|"Yes"| D["Docs, setup and unit checks"]
+  D --> E["Registered E2E if full mode"]
+  E --> F["JSON verdict and exit status"]

@@ -13,7 +13,8 @@ TEST = (ROOT / ".github/workflows/test.yml").read_text()
 GATE = (ROOT / ".github/workflows/gate.yml").read_text()
 ZIZMOR = (ROOT / "zizmor.yml").read_text()
 CONTRIBUTING = (ROOT / "CONTRIBUTING.md").read_text()
-README = (ROOT / "README.md").read_text()
+ENTRY = (ROOT / "README.md").read_text()
+README = ENTRY + "\n" + (ROOT / "README-REFERENCE.md").read_text()
 
 
 class TestWorkflowSecurityCheck(unittest.TestCase):

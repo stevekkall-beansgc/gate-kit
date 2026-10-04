@@ -1,139 +1,76 @@
-# gate-kit
+# Gate Kit
 
-Deterministic, fail-closed compliance and PR/push gates for repositories that publish a `qa-kit` manifest.
+Use one repeatable documentation and test contract locally and in CI.
+Gate Kit reads QA Kit's manifest, checks the selected repository's contributor
+instructions, runs its declared commands and returns a JSON verdict.
 
-This is a five-minute reading route: what problem it solves, how to run it, where the implementation lives, how failure is demonstrated, and which parts of the fleet it supports.
+Missing configuration and failed commands are failures, not silent passes.
+The gate is advisory on the Free-tier CI platform; it is not security
+certification or a deployment system.
 
-## 1. The problem
+## The gate at a glance
 
-A repository needs one repeatable answer to two questions: are its contributor instructions and test entrypoints coherent, and did the declared setup, unit, and optional end-to-end checks actually pass? Running those commands differently in each CI job makes results drift.
+![Trusted manifest and checkout inputs must exist. Missing inputs produce an infrastructure failure; available inputs select documentation and owned checks and produce a JSON verdict.](assets/readme-flow.svg)
 
-`gate-kit` gives local runs and CI the same small contract:
+The same checker reports local or configured CI outcomes. Missing infrastructure is a failure, not a silent pass.
+[Full-size diagram](assets/readme-flow.svg) · [Editable source](assets/readme-flow.mmd).
 
-- load and validate the `qa-kit` manifest;
-- check the repository's documentation contract;
-- run the declared setup and unit commands, and run e2e only when requested;
-- preserve command failures and produce a machine-readable JSON verdict.
+## Try the synthetic demo
 
-The gate is advisory on the repository's Free-tier CI platform, but infrastructure errors never become silent passes.
-
-## 2. Run the synthetic demo
-
-From the repository root, with Python 3 installed:
+With Python 3 installed, run this from the source checkout:
 
 ```sh
 python3 examples/synthetic_quickstart.py
 ```
 
-The script creates a temporary synthetic repository and manifest, then invokes the real [`bin/compliance.py`](bin/compliance.py) as a subprocess. It needs no existing workspace, credentials, private repository, or network access.
+The demo calls the real checker against temporary synthetic repositories.
+It requires no private workspace, credentials or network. It checks a healthy
+repository, a missing documentation contract and a missing manifest. Expect
+the healthy case to pass and both failure cases to fail; the final non-empty
+stdout line is JSON.
 
-The run proves three outcomes:
+## Use with a repository
 
-| Scenario | Expected result | Contract demonstrated |
-| --- | --- | --- |
-| Healthy synthetic repository | Exit `0`; green `PASS` verdict | A valid manifest, docs, and unit command succeed. |
-| Missing required documentation contract in `AGENTS.md` | Exit `1`; `FAIL` verdict | A documentation mismatch is a real gate failure. |
-| Missing `qa-kit` manifest | Exit `1`; infrastructure failure | Missing infrastructure fails closed instead of passing. |
-
-The final non-empty stdout line is JSON. The reusable workflow also keeps the CLI's exit status as the gate result.
-
-For a real checkout with a `qa-kit` manifest, the local form is:
+Only run trusted manifests and commands: they execute locally with the user's
+permissions. With a prepared QA Kit manifest, the CLI form is:
 
 ```sh
 python3 bin/compliance.py --repo <name> --root <checkout> [--full] [--markdown]
 ```
 
-The synthetic demo supplies its temporary manifest through `QA_KIT_DIR`, so that command is not needed to run the demo.
+Default mode runs documentation, setup and unit checks. `--full` adds a
+registered end-to-end command. The
+[detailed guide](README-REFERENCE.md#5-supported-scope) explains selection,
+timeouts, coverage and exit codes.
 
-## 3. Follow the implementation
+## Follow the implementation
 
-Read these links in order:
+- [Checker](bin/compliance.py): manifest → docs → declared commands → verdict.
+- [Synthetic example](examples/synthetic_quickstart.py): real subprocess pass
+  and failure cases.
+- [Reusable workflow](.github/workflows/compliance.yml): fixed source pins,
+  caller checkout and runner boundaries.
+- [Checker tests](tests/test_compliance.py) and
+  [demo tests](tests/test_synthetic_quickstart.py): offline regression evidence.
 
-1. [`bin/compliance.py`](bin/compliance.py) — the local and CI checker. Its main path is `load_manifest` → `manifest_problems` → `docs_check` → declared commands → JSON verdict.
-2. [`examples/synthetic_quickstart.py`](examples/synthetic_quickstart.py) — a small end-to-end harness that builds all three proof cases and calls the real CLI.
-3. [`.github/workflows/compliance.yml`](.github/workflows/compliance.yml) — the reusable workflow: caller checkout, fixed dependency checkouts, runner setup, command routing, and failure propagation.
-4. [`tests/test_compliance.py`](tests/test_compliance.py) and [`tests/test_synthetic_quickstart.py`](tests/test_synthetic_quickstart.py) — offline contract and regression coverage.
-
-[`CONTRIBUTING.md`](CONTRIBUTING.md) is the self-contained public route for setup, tests, the synthetic demo, workflow security review, and change review. [`AGENTS.md`](AGENTS.md) remains the compact test and guardrail reference. For private vulnerability reports, see [`SECURITY.md`](SECURITY.md).
-
-## 4. Failure-mode proof
-
-The quickstart is intentionally more than a happy-path example. A broken `AGENTS.md` produces a failed docs check, and a missing manifest produces a nonzero infrastructure verdict. The regression tests also cover a missing checkout root, a caller-root override, a real subprocess timeout, and preservation of the expected exit status.
-
-The checker treats all of these as failures:
-
-- a missing, unreadable, or malformed manifest;
-- an unknown status, an active row without a path or unit entrypoint, or a manifest with no eligible rows;
-- an unknown or non-active repository selected with `--repo`;
-- a missing repository root, missing command, command error, or 900-second command timeout;
-- an infrastructure problem while loading or selecting the manifest.
-
-A failed check increments the failure count. The process returns `1` when any check fails and `0` only when every selected check passes.
-
-## 5. Supported scope
-
-The manifest is the source of eligibility and commands:
-
-- `active` and `unit-only` rows are eligible; `planned` rows are not.
-- `unit` is required for every eligible row. `setup` and `e2e` are optional.
-- The default mode runs `docs`, `setup`, and `unit`; `--full` adds `e2e` when it is registered.
-- Without `--repo`, all eligible rows are selected. With `--repo`, `--root` may point the selected check at a caller checkout; `--root` without `--repo` is an infrastructure failure.
-- The output is human-readable plus a final JSON object containing the gate name, failure count, selected coverage, and per-repository checks.
-
-The reusable workflow defaults to `ubuntu-latest`. A trusted push caller may select the repository-scoped `beans-mac` runner; pull requests in the checked-in caller stay hosted. The `beans-mac` path uses its preinstalled Python and enforces its separate canonical-checkout guard.
-
-This repository is a compliance gate, not a dependency scanner, history auditor, credential manager, deployment system, or security certification. The report-only zizmor job runs the pinned `ghcr.io/zizmorcore/zizmor:1.28.0@sha256:8e6b3e4fb74d1aa5d23e83ea369f386c66eced0d1fb944d32cd8b2aac100b00d` container directly with `--network none`, mounts only the checkout read-only, passes no GitHub token or secret, and scans only gate-kit's own checked-in workflow definitions. It does not inspect or certify caller repositories. The synthetic demo proves the local gate contract; it does not establish any claim about a repository's history, dependencies, production security, or external services.
-
-## 6. Release pins in v0.4.24
-
-The workflow release and the checker release are separate contracts. The reusable workflow released with `v0.4.24` intentionally checks out the following fixed release refs:
-
-| Purpose | Repository | Pin | Checked-out path |
-| --- | --- | --- | --- |
-| Compliance checker | `gate-kit` | `v0.4.4` | `gate-kit` |
-| QA manifest | `qa-kit` | `v0.6.6` | `qa-kit` |
-| BeanFit CLI fixture used by `beanfit-app` e2e | `BeanFit` | `v0.4.0` | `beanfit` |
-
-For ordinary callers, the workflow then runs the pinned checker as `python3 gate-kit/bin/compliance.py`, points `QA_KIT_DIR` at the checked-out `qa-kit` manifest, and passes `--root caller` for the reviewed caller checkout. It does not run a moving `main` checkout of the checker. For the `agents` profile, the workflow verifies the pinned checker source and changes only its command timeout literals from 900 to 14400 seconds before running the adapted copy; check names, commands, and failure semantics remain the same.
-
-`v0.4.24` therefore identifies the reusable workflow release, not a claim that the checker is also `v0.4.24`. Keeping the immutable `v0.4.4` checker pin is intentional when its contract is unchanged. The three refs above are release-specific compatibility pins, not a claim about release recency. The earlier `v0.4.20` workflow used QA manifest `v0.6.1`; its manifest pin must be read from that release's workflow.
-
-gate-kit's internal caller is the sole reusable-workflow ref-pin exception: `.github/workflows/gate.yml` must use `stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.4.11`, an immutable annotated semver tag. This own annotated tag is never moved, and the separate release gate proves the referenced workflow SHA before release. The root `zizmor.yml` applies `hash-pin` to every other action identity, so third-party actions remain pinned to full 40-character commit SHAs.
-
-## Repository checks
-
-Run the public, offline verification route with:
+## Verify and contribute
 
 ```sh
-python3 examples/synthetic_quickstart.py
 python3 -m unittest discover -s tests -q
 ```
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the exact syntax and standard-library checks, review steps, pinned report-only workflow scan, severity policy, and explicit security-scope limitations.
+[CONTRIBUTING.md](CONTRIBUTING.md) covers full setup and verification, including
+the pinned QA fixture required for shared-executor integration. With those
+prerequisites, Task 3 and Python 3.12, `task validate` runs the existing checks.
 
-## Composable validation adapter
+## Compatibility and limits
 
-[`bin/validation_adapter.py`](bin/validation_adapter.py) adds an explicitly
-enrolled bridge to QA Kit's shared executor. It verifies pinned control sources,
-GitHub event/repository/head identity, and required coverage while retaining the
-existing documentation check. Installing it does not enroll a repository. The
-Agency legacy cohort alone uses the published QA `v0.7.0` manifest so its reviewed
-conditional setup can prepare the public executor fixture. Every other legacy
-cohort retains QA `v0.6.6`; checker/fixture pins, full coverage and runner guards
-remain as before. [The adapter contract](VALIDATION-ADAPTER.md) describes preparation,
-strict fixture tests, evidence limits, and the staged workflow adoption boundary.
+Workflow releases and checker releases are separate. The
+[release-pin guide](README-REFERENCE.md#6-release-pins-in-v0424) records their
+fixed refs; a newer workflow tag does not imply a newer checker.
+[The adapter contract](VALIDATION-ADAPTER.md) explains opt-in validation.
+Installing an adapter does not enroll or activate a repository.
 
-The separately qualified Mac pilot policy is inactive until a reviewed control
-bundle, workflow and repository-scoped runner registration are adopted. It
-accepts only exact main pushes for the two fixed pilot repositories and named
-macOS/ARM64 runners; PRs and forks retain hosted execution. Prepare the real
-published QA fixture with `bash setup/qa-validation/bootstrap.sh`, then run the
-owned E2E entrypoint `bash scripts/test_validation_e2e.sh`. Preparation refuses
-dirty or drifted existing fixtures without resetting them.
-
-With Task 3 installed and `python3` resolving to Python 3.12, run
-`task validate` for this repository's existing syntax, unit, public fixture,
-shared-executor integration, and standard-library checks. The new local
-`local-validate` GitHub job runs it only for trusted `main` pushes on Gate Kit's
-existing repository-scoped Mac runner. Pull requests continue to use the hosted
-`unittest` job; the reusable compliance workflow and its caller pins are unchanged.
+The synthetic demo does not audit repository history, dependencies, live
+services or production security. See [SECURITY.md](SECURITY.md) for private
+reports and [AGENTS.md](AGENTS.md) for operating rules.

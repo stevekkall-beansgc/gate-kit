@@ -204,7 +204,7 @@ class TestWorkflowContract(unittest.TestCase):
 
     def test_qa_manifest_pin_documented_accurately_in_repo_docs(self):
         root = Path(__file__).resolve().parents[1]
-        for doc in ("AGENTS.md", "README.md"):
+        for doc in ("AGENTS.md", "README-REFERENCE.md"):
             text = (root / doc).read_text()
             self.assertIn("v0.6.6", text, f"{doc} must document qa-kit v0.6.6 pin")
             self.assertNotIn("v0.4.3", text, f"{doc} must not reference the retired qa-kit pin")
@@ -215,14 +215,18 @@ class TestWorkflowContract(unittest.TestCase):
         workflow = (root / ".github/workflows/compliance.yml").read_text()
         beanfit = workflow.split("repository: stevekkall-beansgc/beanfit", 1)[1]
         self.assertIn("ref: v0.4.0", beanfit.split("path: beanfit", 1)[0])
-        for doc in ("AGENTS.md", "README.md"):
+        for doc in ("AGENTS.md", "README-REFERENCE.md"):
             text = (root / doc).read_text()
             self.assertIn("v0.4.0", text, f"{doc} must document beanfit fixture v0.4.0 pin")
             self.assertNotIn("v0.1.1", text, f"{doc} must not reference the retired fixture pin")
 
     def test_readme_quickstart_and_release_pins_match_checkout(self):
         root = Path(__file__).resolve().parents[1]
-        readme = (root / "README.md").read_text()
+        entry = (root / "README.md").read_text()
+        self.assertIn("README-REFERENCE.md#6-release-pins-in-v0424", entry)
+        self.assertIn("python3 examples/synthetic_quickstart.py", entry)
+        self.assertIn("they execute locally with the user's", entry)
+        readme = entry + "\n" + (root / "README-REFERENCE.md").read_text()
         workflow = (root / ".github/workflows/compliance.yml").read_text()
 
         self.assertIn("python3 examples/synthetic_quickstart.py", readme)
@@ -291,7 +295,7 @@ class TestSecurityPolicy(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         security = (root / "SECURITY.md").read_text()
         readme = (root / "README.md").read_text()
-        self.assertIn("[`SECURITY.md`](SECURITY.md)", readme)
+        self.assertIn("[SECURITY.md](SECURITY.md)", readme)
         self.assertIn(
             "https://github.com/stevekkall-beansgc/gate-kit/security/advisories/new",
             security,
