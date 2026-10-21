@@ -380,6 +380,9 @@ jobs:
         run: |
           python3 - <<'PY'
           import hashlib, json, os, pathlib, re, subprocess
+          def require(condition):
+              if not condition:
+                  raise ValueError('incompatible QA caller provenance')
           def head(root):
               return subprocess.check_output(['git', '-C', root, 'rev-parse', 'HEAD'], text=True).strip()
           result = {'mode': 'provenance-only', 'caller': head('caller'),
@@ -389,21 +392,22 @@ jobs:
           try:
               data = json.loads(path.read_text())
               checks = data['checks']
-              assert data['schema'] == 'qa-kit.selfcheck-provenance/v1'
-              assert data['candidate'] == result['caller']
+              require(data['schema'] == 'qa-kit.selfcheck-provenance/v1')
+              require(data['candidate'] == result['caller'])
               source = data['candidate_source']
-              assert set(source) == {'head', 'dirty', 'matches_head', 'tracked_sha256'}
-              assert source['head'] == result['caller'] and source['dirty'] is False and source['matches_head'] is True
-              assert re.fullmatch('[0-9a-f]{64}', source['tracked_sha256'])
-              assert data['entrypoint'] == result['entrypoint']
-              assert data['entrypoint_sha256'] == hashlib.sha256(pathlib.Path('caller/bin/qa_selfcheck.sh').read_bytes()).hexdigest()
-              assert type(data['python_version']) is list and len(data['python_version']) == 3
-              assert all(type(n) is int and n >= 0 for n in data['python_version'])
-              assert data['python_version'][:2] == [3, 12]
-              assert re.fullmatch('[0-9a-f]{64}', data['python_binary_sha256'])
-              assert set(checks) == {'runtime', 'docs', 'standards', 'unit', 'stdlib'}
-              assert all(x in {'pass', 'fail', 'blocked'} for x in checks.values())
-              assert type(data['exit_code']) is int
+              require(set(source) == {'head', 'dirty', 'matches_head', 'tracked_sha256'})
+              require(source['head'] == result['caller'] and source['dirty'] is False and source['matches_head'] is True)
+              require(re.fullmatch('[0-9a-f]{64}', source['tracked_sha256']))
+              require(data['entrypoint'] == result['entrypoint'])
+              require(data['entrypoint_sha256'] == hashlib.sha256(pathlib.Path('caller/bin/qa_selfcheck.sh').read_bytes()).hexdigest())
+              require(type(data['python_version']) is list and len(data['python_version']) == 3)
+              require(all(type(n) is int and n >= 0 for n in data['python_version']))
+              require(data['python_version'][:2] == [3, 12])
+              require(re.fullmatch('[0-9a-f]{64}', data['python_binary_sha256']))
+              require(set(checks) == {'runtime', 'docs', 'standards', 'unit', 'stdlib'})
+              require(all(x in {'pass', 'fail', 'blocked'} for x in checks.values()))
+              require(type(data['exit_code']) is int)
+              require(data['exit_code'] != 0 or all(x == 'pass' for x in checks.values()))
               result.update(execution='recorded', candidate_source=source, python_version=data['python_version'],
                             python_binary_sha256=data['python_binary_sha256'],
                             entrypoint_sha256=data['entrypoint_sha256'],

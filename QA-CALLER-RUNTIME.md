@@ -34,7 +34,10 @@ cleanliness, selected check statuses and exit
 code. It copies no raw child output or executable path. The workflow's separate
 summary binds that report to caller/checker/control commits and rechecks the
 candidate/entrypoint identity. Missing or incompatible provenance is explicit and
-fails the reporting step. A failure remains a failure; summary data is not a
+fails the reporting step. Validation uses explicit conditions so Python
+optimization cannot disable it. A zero exit with failed/blocked checks is
+incompatible; a genuine nonzero exit with failed/blocked checks remains
+reportable failure evidence. A failure remains a failure; summary data is not a
 replacement compliance receipt or security acceptance.
 
 Offline tests exercise missing/wrong interpreters, real failing unit/stdlib

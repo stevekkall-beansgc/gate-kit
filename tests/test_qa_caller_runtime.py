@@ -26,7 +26,7 @@ class QaCallerRuntime(unittest.TestCase):
         self.assertIn('  compliance:\n', WORKFLOW)
         self.assertIn('python3 gate-kit/bin/compliance.py "${gate_args[@]}" | tee gate-report.md', WORKFLOW)
 
-    def test_missing_report_is_explicit_and_summary_never_dumps_raw_output(self):
+    def test_summary_validation_survives_optimization_without_disclosing_raw_values(self):
         step = WORKFLOW.split('      - name: Retain bounded QA Kit caller provenance')[1]
         script = step.split("python3 - <<'PY'\n", 1)[1].rsplit('          PY', 1)[0]
         script = '\n'.join(line[10:] for line in script.splitlines())
@@ -57,11 +57,13 @@ class QaCallerRuntime(unittest.TestCase):
                       'python_version': [3, 12, 14], 'python_binary_sha256': 'a' * 64,
                       'exit_code': 0, 'checks': dict.fromkeys(['runtime', 'docs', 'standards', 'unit', 'stdlib'], 'pass')}
             for mutation, expected in [({}, 0), ({'python_version': [3, 12, 'private']}, 1),
-                                       ({'candidate': 'f' * 40}, 1), ({'checks': {'unit': 'private'}}, 1)]:
+                                       ({'candidate': 'f' * 40}, 1), ({'checks': {'unit': 'private'}}, 1),
+                                       ({'checks': {**report['checks'], 'unit': 'fail'}}, 1),
+                                       ({'exit_code': 1, 'checks': {**report['checks'], 'unit': 'fail', 'stdlib': 'blocked'}}, 0)]:
                 (root / 'qa-selfcheck-provenance.json').write_text(json.dumps({**report, **mutation}))
                 summary.write_text('')
                 r = subprocess.run([sys.executable, '-c', script], cwd=root,
-                                   env={**os.environ, 'RUNNER_TEMP': temp, 'GITHUB_STEP_SUMMARY': str(summary)},
+                                   env={**os.environ, 'RUNNER_TEMP': temp, 'GITHUB_STEP_SUMMARY': str(summary), 'PYTHONOPTIMIZE': '1'},
                                    capture_output=True, text=True)
                 self.assertEqual(r.returncode, expected, r.stderr)
                 self.assertNotIn('private', summary.read_text())
