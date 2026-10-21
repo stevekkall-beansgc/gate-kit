@@ -28,9 +28,10 @@ python3 examples/synthetic_quickstart.py
 
 The demo calls the real checker against temporary synthetic repositories.
 It requires no private workspace, credentials or network. It checks a healthy
-repository, a missing documentation contract and a missing manifest. Expect
-the healthy case to pass and both failure cases to fail; the final non-empty
-stdout line is JSON.
+repository, a missing documentation contract and a missing manifest. Each
+checker invocation ends with a JSON verdict: the healthy case exits `0`, and
+both failure cases exit `1`. The demo itself ends with a prose summary and
+exits `0` only when all three outcomes match those expectations.
 
 ## Use with a repository
 

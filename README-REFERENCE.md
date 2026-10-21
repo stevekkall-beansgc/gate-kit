@@ -37,7 +37,7 @@ The run proves three outcomes:
 | Missing required documentation contract in `AGENTS.md` | Exit `1`; `FAIL` verdict | A documentation mismatch is a real gate failure. |
 | Missing `qa-kit` manifest | Exit `1`; infrastructure failure | Missing infrastructure fails closed instead of passing. |
 
-The final non-empty stdout line is JSON. The reusable workflow also keeps the CLI's exit status as the gate result.
+The table describes each child checker invocation, whose final non-empty stdout line is JSON. The demo wrapper ends with a prose summary and exits `0` only when all three expected outcomes occur, including the two checker exits of `1`. The reusable workflow also keeps the CLI's exit status as the gate result.
 
 For a real checkout with a `qa-kit` manifest, the local form is:
 
