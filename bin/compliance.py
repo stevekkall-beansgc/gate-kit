@@ -116,6 +116,9 @@ def _spec_problems(repo_name, label, spec, required=False):
                             or any(not isinstance(k, str) or not isinstance(v, str)
                                    for k, v in env.items())):
         problems.append(f"{repo_name}: {label}.env must map strings to strings")
+    elif env is not None and any("=" in k or "\0" in k or "\0" in v
+                                 for k, v in env.items()):
+        problems.append(f"{repo_name}: {label}.env contains invalid environment names or NUL bytes")
     return problems
 
 

@@ -164,6 +164,59 @@ class TestMainContract(unittest.TestCase):
                     self.assertIn(f"malformed: unknown status {status!r}",
                                   verdict["infrastructure"])
 
+    def test_invalid_manifest_env_refuses_before_any_selected_commands(self):
+        invalid = ({"BAD=NAME": "synthetic"},
+                   {"BAD\0NAME": "synthetic"},
+                   {"VALID": "synthetic\0value"})
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "manifest.json"
+            for label in ("setup", "unit", "e2e"):
+                for values in invalid:
+                    with self.subTest(label=label, values=values):
+                        malformed = {"name": "malformed", "status": "active",
+                                     "path": str(root), "unit": {"cmd": ["true"]}}
+                        malformed[label] = {"cmd": ["true"], "env": values}
+                        manifest.write_text(json.dumps({"repos": [
+                            {"name": "selected", "status": "active", "path": str(root),
+                             "unit": {"cmd": ["true"]}}, malformed
+                        ]}))
+                        with mock.patch.object(compliance, "sh", return_value={
+                                "ok": True, "secs": 0.0, "tail": ""}) as run_command:
+                            result, output = self._run(["--repo", "selected"], manifest)
+                        run_command.assert_not_called()
+                        self.assertEqual(result, 1)
+                        verdict = json.loads(output.splitlines()[-1])
+                        self.assertEqual(verdict["failures"], 1)
+                        self.assertEqual(verdict["repos"], [])
+                        self.assertIn(f"malformed: {label}.env contains invalid environment names or NUL bytes",
+                                      verdict["infrastructure"])
+                        self.assertNotIn("synthetic", output)
+
+    def test_valid_env_values_and_override_reach_real_command(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "observed.json"
+            script = ("import json, os; from pathlib import Path; "
+                      "Path('observed.json').write_text(json.dumps({"
+                      "k: os.environ[k] for k in ('EQUALS', 'EMPTY', 'OVERRIDE')}))")
+            cmd = [sys.executable, "-c", script]
+            (root / "AGENTS.md").write_text("## Test commands\n" + " ".join(cmd))
+            (root / "README.md").write_text("See AGENTS.md")
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({"repos": [{
+                "name": "selected", "status": "active", "path": str(root),
+                "unit": {"cmd": cmd, "env": {"EQUALS": "alpha=beta", "EMPTY": "",
+                                               "OVERRIDE": "/synthetic/explicit"}}
+            }]}))
+            with mock.patch.dict(compliance.os.environ, {"OVERRIDE": "/synthetic/inherited"}):
+                result, stdout = self._run(["--repo", "selected"], manifest)
+            self.assertEqual(result, 0)
+            self.assertEqual(json.loads(stdout.splitlines()[-1])["repos"][0]["verdict"], "PASS")
+            self.assertEqual(json.loads(output.read_text()), {
+                "EQUALS": str(root.resolve() / "alpha=beta"), "EMPTY": str(root.resolve()),
+                "OVERRIDE": "/synthetic/explicit"})
+
     def test_root_override_checks_the_caller_checkout(self):
         root = Path(tempfile.mkdtemp())
         (root / "AGENTS.md").write_text("## Test commands\ntrue\n")
