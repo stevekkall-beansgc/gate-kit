@@ -141,6 +141,29 @@ class TestMainContract(unittest.TestCase):
         self.assertEqual(verdict["failures"], 1)
         self.assertIn("infrastructure", verdict)
 
+    def test_container_status_refuses_with_json_before_any_commands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "manifest.json"
+            for status in ([], {}):
+                with self.subTest(status=status):
+                    manifest.write_text(json.dumps({"repos": [
+                        {"name": "valid", "status": "active", "path": str(root),
+                         "unit": {"cmd": ["true"]}},
+                        {"name": "malformed", "status": status, "path": str(root),
+                         "unit": {"cmd": ["true"]}}
+                    ]}))
+                    with mock.patch.object(compliance, "sh") as run_command:
+                        result, output = self._run(["--repo", "valid"], manifest)
+                    run_command.assert_not_called()
+                    self.assertEqual(result, 1)
+                    verdict = json.loads(output.splitlines()[-1])
+                    self.assertEqual(verdict["gate"], "compliance")
+                    self.assertEqual(verdict["failures"], 1)
+                    self.assertEqual(verdict["repos"], [])
+                    self.assertIn(f"malformed: unknown status {status!r}",
+                                  verdict["infrastructure"])
+
     def test_root_override_checks_the_caller_checkout(self):
         root = Path(tempfile.mkdtemp())
         (root / "AGENTS.md").write_text("## Test commands\ntrue\n")

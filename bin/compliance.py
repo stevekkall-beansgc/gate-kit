@@ -134,7 +134,7 @@ def manifest_problems(manifest):
         elif name in seen:
             problems.append(f"duplicate repo name: {name}")
         seen.add(name)
-        if status not in KNOWN_STATUSES:
+        if not isinstance(status, str) or status not in KNOWN_STATUSES:
             problems.append(f"{name}: unknown status {status!r}")
         if status not in ACTIVE_STATUSES:
             continue

@@ -17,7 +17,9 @@ WORKFLOW = (ROOT / '.github/workflows/compliance.yml').read_text()
 PROFILE = textwrap.dedent(WORKFLOW.split("      - name: Prepare isolated agents compliance profile\n", 1)[1].split("python3 - <<'PY'\n", 1)[1].split('          PY\n', 1)[0])
 NS = {'__name__': 'profile_test'}
 exec(compile(PROFILE, '<workflow-profile>', 'exec'), NS)
-CHECKER = (ROOT / 'bin/compliance.py').read_text()
+# The workflow checks out immutable v0.4.4 (bbf2f16096d6c2e13228de2f68c804fdff8da7d8),
+# independently of the moving CLI. adapt_checker verifies these exact bytes.
+CHECKER = (ROOT / 'tests/fixtures/compliance-v0.4.4.py').read_text()
 ENV = {'RUNNER_ENVIRONMENT': 'github-hosted', 'RUNNER_OS': 'macOS', 'GATE_RUNNER': 'macos-15'}
 SHA = 'a' * 40
 
