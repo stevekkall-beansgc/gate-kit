@@ -257,10 +257,27 @@ jobs:
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         if: inputs.runner != 'beans-mac'
         with:
-          python-version: "3.13"
+          python-version: ${{ inputs.repo == 'qa-kit' && '3.12' || '3.13' }}
       - name: Verify preinstalled self-hosted Python
         if: inputs.runner == 'beans-mac'
         run: python3 --version
+      - name: Select QA Kit caller Python 3.12 on the existing Mac
+        if: inputs.repo == 'qa-kit' && inputs.runner == 'beans-mac'
+        shell: bash
+        run: |
+          set -euo pipefail
+          qa_python=/opt/homebrew/opt/python@3.12/libexec/bin/python3
+          test -x "$qa_python"
+          "$qa_python" -c 'import sys; sys.exit(sys.version_info[:2] != (3, 12))'
+          echo /opt/homebrew/opt/python@3.12/libexec/bin >> "$GITHUB_PATH"
+      - name: Configure QA Kit caller provenance
+        if: inputs.repo == 'qa-kit'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -c 'import sys; sys.exit(sys.version_info[:2] != (3, 12))'
+          test ! -e "$RUNNER_TEMP/qa-selfcheck-provenance.json"
+          echo "QA_SELFCHECK_REPORT=$RUNNER_TEMP/qa-selfcheck-provenance.json" >> "$GITHUB_ENV"
       - name: Prepare JavaScript test runtime
         if: ${{ inputs.repo == 'agency' || inputs.repo == 'beanfit-app' || inputs.repo == 'bean-counter' }}
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -357,3 +374,48 @@ jobs:
       - name: Attach summary
         if: always()
         run: cp gate-report.md "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+      - name: Retain bounded QA Kit caller provenance
+        if: always() && inputs.repo == 'qa-kit'
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, subprocess
+          def require(condition):
+              if not condition:
+                  raise ValueError('incompatible QA caller provenance')
+          def head(root):
+              return subprocess.check_output(['git', '-C', root, 'rev-parse', 'HEAD'], text=True).strip()
+          result = {'mode': 'provenance-only', 'caller': head('caller'),
+                    'checker': head('gate-kit'), 'controls': head('qa-kit'),
+                    'entrypoint': 'bash bin/qa_selfcheck.sh', 'execution': 'unavailable'}
+          path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'qa-selfcheck-provenance.json'
+          try:
+              data = json.loads(path.read_text())
+              checks = data['checks']
+              require(data['schema'] == 'qa-kit.selfcheck-provenance/v1')
+              require(data['candidate'] == result['caller'])
+              source = data['candidate_source']
+              require(set(source) == {'head', 'dirty', 'matches_head', 'tracked_sha256'})
+              require(source['head'] == result['caller'] and source['dirty'] is False and source['matches_head'] is True)
+              require(re.fullmatch('[0-9a-f]{64}', source['tracked_sha256']))
+              require(data['entrypoint'] == result['entrypoint'])
+              require(data['entrypoint_sha256'] == hashlib.sha256(pathlib.Path('caller/bin/qa_selfcheck.sh').read_bytes()).hexdigest())
+              require(type(data['python_version']) is list and len(data['python_version']) == 3)
+              require(all(type(n) is int and n >= 0 for n in data['python_version']))
+              require(data['python_version'][:2] == [3, 12])
+              require(re.fullmatch('[0-9a-f]{64}', data['python_binary_sha256']))
+              require(set(checks) == {'runtime', 'docs', 'standards', 'unit', 'stdlib'})
+              require(all(x in {'pass', 'fail', 'blocked'} for x in checks.values()))
+              require(type(data['exit_code']) is int)
+              require(data['exit_code'] != 0 or all(x == 'pass' for x in checks.values()))
+              result.update(execution='recorded', candidate_source=source, python_version=data['python_version'],
+                            python_binary_sha256=data['python_binary_sha256'],
+                            entrypoint_sha256=data['entrypoint_sha256'],
+                            exit_code=data['exit_code'], checks=checks)
+          except (OSError, ValueError, KeyError, TypeError, AssertionError):
+              pass
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as stream:
+              stream.write('\nQA Kit caller provenance (separate from compliance verdict):\n```json\n' + json.dumps(result, sort_keys=True) + '\n```\n')
+          if result['execution'] != 'recorded':
+              raise SystemExit('QA Kit caller provenance unavailable or incompatible')
+          PY
