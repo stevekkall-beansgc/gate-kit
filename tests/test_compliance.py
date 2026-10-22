@@ -2,6 +2,8 @@
 import contextlib
 import io
 import json
+import os
+import subprocess
 import re
 import sys
 import tempfile
@@ -192,6 +194,66 @@ class TestMainContract(unittest.TestCase):
                         self.assertIn(f"malformed: {label}.env contains invalid environment names or NUL bytes",
                                       verdict["infrastructure"])
                         self.assertNotIn("synthetic", output)
+
+    def test_nul_command_refuses_with_json_before_any_commands(self):
+        cli = Path(compliance.__file__).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            marker = root / "executed"
+            valid = [sys.executable, "-c",
+                     "from pathlib import Path; Path('executed').touch()"]
+            (root / "README.md").write_text("See AGENTS.md")
+            for label in ("setup", "unit", "e2e"):
+                for position in ("executable", "argument"):
+                    for selected in ("malformed", "valid"):
+                        with self.subTest(label=label, position=position, selected=selected):
+                            marker.unlink(missing_ok=True)
+                            malformed = {"name": "malformed", "status": "active",
+                                         "path": str(root), "setup": {"cmd": valid},
+                                         "unit": {"cmd": valid}, "e2e": {"cmd": valid}}
+                            cmd = (["synthetic\0executable"] if position == "executable"
+                                   else [*valid, "synthetic\0argument"])
+                            malformed[label] = {"cmd": cmd}
+                            (root / "AGENTS.md").write_text(
+                                "## Test commands\n" + " ".join(malformed["unit"]["cmd"]) +
+                                "\n" + " ".join(valid))
+                            (root / "manifest.json").write_text(json.dumps({"repos": [
+                                malformed, {"name": "valid", "status": "unit-only",
+                                            "path": str(root), "unit": {"cmd": valid}}
+                            ]}))
+                            process = subprocess.run(
+                                [sys.executable, "-B", str(cli), "--repo", selected, "--full"],
+                                env={"QA_KIT_DIR": str(root), "PATH": os.defpath},
+                                capture_output=True, text=True, timeout=10)
+                            self.assertEqual(process.returncode, 1)
+                            self.assertNotIn("Traceback", process.stderr)
+                            self.assertFalse(marker.exists(), "commands ran before refusal")
+                            verdict = json.loads(process.stdout.splitlines()[-1])
+                            self.assertEqual(verdict["gate"], "compliance")
+                            self.assertEqual(verdict["failures"], 1)
+                            self.assertEqual(verdict["repos"], [])
+                            self.assertTrue(any(f"malformed: {label}.cmd" in message
+                                                for message in verdict["infrastructure"]))
+                            self.assertNotIn("synthetic", process.stdout + process.stderr)
+
+    def test_valid_literal_command_arguments_reach_real_command(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            arguments = ["alpha=beta", "semi;colon", "two words", "quote'\"value"]
+            script = ("import json, sys; from pathlib import Path; "
+                      "Path('arguments.json').write_text(json.dumps(sys.argv[1:]))")
+            cmd = [sys.executable, "-c", script, *arguments]
+            (root / "AGENTS.md").write_text("## Test commands\n" + " ".join(cmd))
+            (root / "README.md").write_text("See AGENTS.md")
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({"repos": [{
+                "name": "valid", "status": "active", "path": str(root),
+                "unit": {"cmd": cmd}
+            }]}))
+            result, stdout = self._run(["--repo", "valid"], manifest)
+            self.assertEqual(result, 0)
+            self.assertEqual(json.loads(stdout.splitlines()[-1])["repos"][0]["verdict"], "PASS")
+            self.assertEqual(json.loads((root / "arguments.json").read_text()), arguments)
 
     def test_valid_env_values_and_override_reach_real_command(self):
         with tempfile.TemporaryDirectory() as directory:

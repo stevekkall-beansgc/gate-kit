@@ -94,7 +94,8 @@ def load_manifest():
 
 def _valid_cmd(cmd):
     return (isinstance(cmd, list) and bool(cmd)
-            and all(isinstance(part, str) and bool(part) for part in cmd))
+            and all(isinstance(part, str) and bool(part) and "\0" not in part
+                    for part in cmd))
 
 
 def _spec_problems(repo_name, label, spec, required=False):
