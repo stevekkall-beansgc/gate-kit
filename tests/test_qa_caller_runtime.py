@@ -21,7 +21,7 @@ class QaCallerRuntime(unittest.TestCase):
         self.assertIn('sys.version_info[:2] != (3, 12)', local)
         self.assertNotIn('setup-python', local)
         self.assertIn('ref: v0.4.4', WORKFLOW)
-        self.assertIn("'v0.7.0' || 'v0.6.6'", WORKFLOW)
+        self.assertIn("'v0.7.0' || inputs.repo == 'bean-counter' && 'v0.6.1' || 'v0.6.6'", WORKFLOW)
         self.assertIn('ref: v0.4.0', WORKFLOW)
         self.assertIn('  compliance:\n', WORKFLOW)
         self.assertIn('python3 gate-kit/bin/compliance.py "${gate_args[@]}" | tee gate-report.md', WORKFLOW)

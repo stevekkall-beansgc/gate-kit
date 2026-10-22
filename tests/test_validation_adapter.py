@@ -57,7 +57,7 @@ class TestExecutorBoundary(unittest.TestCase):
 class TestQualificationWorkflow(unittest.TestCase):
     def test_agency_bootstrap_cohort_preserves_legacy_controls_and_coverage(self):
         workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/compliance.yml").read_text()
-        self.assertIn("ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || 'v0.6.6' }}", workflow)
+        self.assertIn("ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || inputs.repo == 'bean-counter' && 'v0.6.1' || 'v0.6.6' }}", workflow)
         self.assertIn("ref: v0.4.4", workflow)
         self.assertIn("ref: v0.4.0", workflow)
         self.assertIn("if [[ \"$GATE_FULL\" == \"true\" ]]; then", workflow)
