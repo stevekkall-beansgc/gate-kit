@@ -192,6 +192,55 @@ class TestMainContract(unittest.TestCase):
     def test_utf8_document_control_preserves_selected_commands(self):
         self._document_bytes_cli()
 
+    def _executable_format_cli(self, valid):
+        cli = Path(compliance.__file__).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            entrypoint = root / "synthetic-entrypoint"
+            entrypoint.write_text(("#!/bin/sh\n" if valid else "") +
+                                  "printf ran >> executed\n")
+            entrypoint.chmod(0o700)
+            (root / "README.md").write_text("See AGENTS.md")
+            for label in ("setup", "unit", "e2e"):
+                with self.subTest(label=label):
+                    marker = root / "executed"
+                    marker.unlink(missing_ok=True)
+                    repo = {"name": "synthetic", "status": "active", "path": str(root),
+                            **{tier: {"cmd": ["/usr/bin/true"]}
+                               for tier in ("setup", "unit", "e2e")}}
+                    repo[label] = {"cmd": [str(entrypoint)]}
+                    (root / "AGENTS.md").write_text(
+                        "## Test commands\n" + " ".join(repo["unit"]["cmd"]))
+                    (root / "manifest.json").write_text(json.dumps({"repos": [repo]}))
+                    process = subprocess.run(
+                        [sys.executable, "-B", str(cli), "--repo", "synthetic", "--full"],
+                        env={"QA_KIT_DIR": str(root), "HOME": str(home), "PATH": os.defpath},
+                        capture_output=True, text=True, timeout=10)
+                    self.assertEqual(process.returncode, 0 if valid else 1)
+                    self.assertNotIn("Traceback", process.stderr)
+                    verdict = json.loads(process.stdout.splitlines()[-1])
+                    self.assertEqual(verdict["gate"], "compliance")
+                    self.assertEqual(verdict["failures"], 0 if valid else 1)
+                    self.assertEqual(verdict["repos"][0]["verdict"], "PASS" if valid else "FAIL")
+                    checks = verdict["repos"][0]["checks"]
+                    self.assertEqual([check["name"] for check in checks],
+                                     ["docs", "setup", "unit", "e2e"])
+                    for check in checks:
+                        self.assertEqual(check["ok"], valid or check["name"] != label)
+                        if check["name"] == label:
+                            self.assertEqual(check["detail"],
+                                             None if valid else "entrypoint launch failed")
+                    self.assertEqual(marker.read_text() if marker.exists() else "", "ran" if valid else "")
+                    self.assertNotIn(str(root), process.stdout + process.stderr)
+
+    def test_invalid_executable_format_preserves_final_json(self):
+        self._executable_format_cli(valid=False)
+
+    def test_valid_executable_format_control_reaches_selected_tier(self):
+        self._executable_format_cli(valid=True)
+
     def test_permission_denied_entrypoint_preserves_final_json(self):
         cli = Path(compliance.__file__).resolve()
         with tempfile.TemporaryDirectory() as directory:
