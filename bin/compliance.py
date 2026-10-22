@@ -111,7 +111,7 @@ def _spec_problems(repo_name, label, spec, required=False):
         if required:
             problems.append(f"{repo_name}: missing {label} entrypoint")
     elif not _valid_cmd(cmd):
-        problems.append(f"{repo_name}: {label}.cmd must be a non-empty command list")
+        problems.append(f"{repo_name}: {label}.cmd must be a non-empty command list without NUL bytes")
     env = spec.get("env")
     if env is not None and (not isinstance(env, dict)
                             or any(not isinstance(k, str) or not isinstance(v, str)

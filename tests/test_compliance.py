@@ -232,8 +232,9 @@ class TestMainContract(unittest.TestCase):
                             self.assertEqual(verdict["gate"], "compliance")
                             self.assertEqual(verdict["failures"], 1)
                             self.assertEqual(verdict["repos"], [])
-                            self.assertTrue(any(f"malformed: {label}.cmd" in message
-                                                for message in verdict["infrastructure"]))
+                            self.assertIn(
+                                f"malformed: {label}.cmd must be a non-empty command list without NUL bytes",
+                                verdict["infrastructure"])
                             self.assertNotIn("synthetic", process.stdout + process.stderr)
 
     def test_valid_literal_command_arguments_reach_real_command(self):
