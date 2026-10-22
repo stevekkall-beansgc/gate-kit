@@ -143,6 +143,72 @@ class TestMainContract(unittest.TestCase):
         self.assertEqual(verdict["failures"], 1)
         self.assertIn("infrastructure", verdict)
 
+    def test_permission_denied_entrypoint_preserves_final_json(self):
+        cli = Path(compliance.__file__).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            entrypoint = root / "denied-entrypoint"
+            entrypoint.write_text("#!/bin/sh\nprintf ran >> denied-executed\n")
+            entrypoint.chmod(0o600)
+            (root / "README.md").write_text("See AGENTS.md")
+            for label in ("setup", "unit", "e2e"):
+                with self.subTest(label=label):
+                    repo = {"name": "synthetic", "status": "active", "path": str(root),
+                            "setup": {"cmd": ["/usr/bin/true"]},
+                            "unit": {"cmd": ["/usr/bin/true"]},
+                            "e2e": {"cmd": ["/usr/bin/true"]}}
+                    repo[label] = {"cmd": [str(entrypoint)]}
+                    (root / "AGENTS.md").write_text(
+                        "## Test commands\n" + " ".join(repo["unit"]["cmd"]))
+                    (root / "manifest.json").write_text(json.dumps({"repos": [repo]}))
+                    process = subprocess.run(
+                        [sys.executable, "-B", str(cli), "--repo", "synthetic", "--full"],
+                        env={"QA_KIT_DIR": str(root), "HOME": str(home), "PATH": os.defpath},
+                        capture_output=True, text=True, timeout=10)
+                    self.assertEqual(process.returncode, 1)
+                    self.assertNotIn("Traceback", process.stderr)
+                    self.assertFalse((root / "denied-executed").exists())
+                    verdict = json.loads(process.stdout.splitlines()[-1])
+                    self.assertEqual(verdict["gate"], "compliance")
+                    self.assertEqual(verdict["failures"], 1)
+                    self.assertEqual(verdict["repos"][0]["verdict"], "FAIL")
+                    checks = {check["name"]: check for check in verdict["repos"][0]["checks"]}
+                    self.assertFalse(checks[label]["ok"])
+                    self.assertEqual(checks[label]["detail"], "entrypoint permission denied")
+                    self.assertTrue(all(check["ok"] for name, check in checks.items()
+                                        if name != label))
+                    self.assertNotIn(str(root), process.stdout + process.stderr)
+
+    def test_executable_entrypoint_control_reaches_each_tier(self):
+        cli = Path(compliance.__file__).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            entrypoint = root / "valid-entrypoint"
+            entrypoint.write_text("#!/bin/sh\nprintf ran >> executed\n")
+            entrypoint.chmod(0o700)
+            command = [str(entrypoint)]
+            repo = {"name": "synthetic", "status": "active", "path": str(root),
+                    **{label: {"cmd": command} for label in ("setup", "unit", "e2e")}}
+            (root / "README.md").write_text("See AGENTS.md")
+            (root / "AGENTS.md").write_text("## Test commands\n" + " ".join(command))
+            (root / "manifest.json").write_text(json.dumps({"repos": [repo]}))
+            process = subprocess.run(
+                [sys.executable, "-B", str(cli), "--repo", "synthetic", "--full"],
+                env={"QA_KIT_DIR": str(root), "HOME": str(home), "PATH": os.defpath},
+                capture_output=True, text=True, timeout=10)
+            self.assertEqual(process.returncode, 0, process.stderr)
+            verdict = json.loads(process.stdout.splitlines()[-1])
+            self.assertEqual(verdict["failures"], 0)
+            self.assertEqual(verdict["repos"][0]["verdict"], "PASS")
+            self.assertEqual([check["name"] for check in verdict["repos"][0]["checks"]],
+                             ["docs", "setup", "unit", "e2e"])
+            self.assertTrue(all(check["ok"] for check in verdict["repos"][0]["checks"]))
+            self.assertEqual((root / "executed").read_text(), "ranranran")
+
     def test_container_status_refuses_with_json_before_any_commands(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

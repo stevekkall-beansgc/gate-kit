@@ -47,6 +47,8 @@ def sh(cmd, cwd, env=None):
         tail = ((p.stdout or "") + "\n" + (p.stderr or ""))[-800:]
     except FileNotFoundError as e:
         ok, tail = False, f"entrypoint missing (or working directory missing): {e}"
+    except PermissionError:
+        ok, tail = False, "entrypoint permission denied"
     except subprocess.TimeoutExpired:
         ok, tail = False, "timeout 900s"
     return {"ok": ok, "secs": round(time.monotonic() - t0, 1), "tail": tail.strip()}
