@@ -207,10 +207,19 @@ def main():
                 "statuses": list(ACTIVE_STATUSES),
                 "mode": "repo" if args.repo else "all"}
 
+    roots = {}
+    for repo in repos:
+        try:
+            roots[repo["name"]] = expand(args.root or repo["path"]).resolve()
+        except (OSError, RuntimeError):
+            problems.append(f"{repo['name']}: cannot resolve repo root")
+    if problems:
+        return emit_infrastructure_failure(problems, coverage)
+
     report = []
     failures = 0
     for repo in repos:
-        root = (expand(args.root) if args.root else expand(repo["path"])).resolve()
+        root = roots[repo["name"]]
         unit_cmd = (repo.get("unit") or {}).get("cmd") or []
         checks = []
 

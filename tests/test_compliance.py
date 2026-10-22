@@ -280,6 +280,77 @@ class TestMainContract(unittest.TestCase):
                 "EQUALS": str(root.resolve() / "alpha=beta"), "EMPTY": str(root.resolve()),
                 "OVERRIDE": "/synthetic/explicit"})
 
+    def test_symlink_loop_root_refuses_with_json_before_any_commands(self):
+        cli = Path(compliance.__file__).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            loop = home / "loop"
+            loop.symlink_to("loop")
+            marker = root / "executed"
+            cmd = [sys.executable, "-c",
+                   "from pathlib import Path; Path('executed').touch()"]
+            (root / "AGENTS.md").write_text("## Test commands\n" + " ".join(cmd))
+            (root / "README.md").write_text("See AGENTS.md")
+            env = {"QA_KIT_DIR": str(root), "HOME": str(home), "PATH": os.defpath}
+            for mode in ("manifest-all", "manifest-selected", "override"):
+                with self.subTest(mode=mode):
+                    marker.unlink(missing_ok=True)
+                    (root / "manifest.json").write_text(json.dumps({"repos": [
+                        {"name": "valid", "status": "active", "path": str(root),
+                         "unit": {"cmd": cmd}},
+                        {"name": "blocked", "status": "unit-only", "path": "~/loop",
+                         "unit": {"cmd": cmd}}
+                    ]}))
+                    args = [] if mode == "manifest-all" else ["--repo", "blocked"]
+                    if mode == "override":
+                        args += ["--root", str(loop)]
+                    process = subprocess.run([sys.executable, "-B", str(cli), *args],
+                                             env=env, capture_output=True, text=True,
+                                             timeout=10)
+                    self.assertEqual(process.returncode, 1)
+                    self.assertNotIn("Traceback", process.stderr)
+                    self.assertFalse(marker.exists(), "commands ran before root refusal")
+                    verdict = json.loads(process.stdout.splitlines()[-1])
+                    self.assertEqual(verdict["gate"], "compliance")
+                    self.assertEqual(verdict["failures"], 1)
+                    self.assertEqual(verdict["repos"], [])
+                    self.assertEqual(verdict["infrastructure"],
+                                     ["blocked: cannot resolve repo root"])
+                    self.assertNotIn(str(home), process.stdout + process.stderr)
+
+    def test_valid_tilde_symlink_root_reaches_real_command(self):
+        cli = Path(compliance.__file__).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            target = home / "target"
+            target.mkdir()
+            (home / "alias").symlink_to("target", target_is_directory=True)
+            marker = target / "executed"
+            cmd = [sys.executable, "-c",
+                   "from pathlib import Path; Path('executed').touch()"]
+            (target / "AGENTS.md").write_text("## Test commands\n" + " ".join(cmd))
+            (target / "README.md").write_text("See AGENTS.md")
+            (root / "manifest.json").write_text(json.dumps({"repos": [{
+                "name": "valid", "status": "active", "path": "~/alias",
+                "unit": {"cmd": cmd}
+            }]}))
+            for args in ([], ["--repo", "valid", "--root", "~/alias"]):
+                with self.subTest(args=args):
+                    marker.unlink(missing_ok=True)
+                    process = subprocess.run(
+                        [sys.executable, "-B", str(cli), *args],
+                        env={"QA_KIT_DIR": str(root), "HOME": str(home), "PATH": os.defpath},
+                        capture_output=True, text=True, timeout=10)
+                    self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+                    self.assertTrue(marker.exists())
+                    verdict = json.loads(process.stdout.splitlines()[-1])
+                    self.assertEqual(verdict["failures"], 0)
+                    self.assertEqual(verdict["repos"][0]["verdict"], "PASS")
+
     def test_root_override_checks_the_caller_checkout(self):
         root = Path(tempfile.mkdtemp())
         (root / "AGENTS.md").write_text("## Test commands\ntrue\n")
