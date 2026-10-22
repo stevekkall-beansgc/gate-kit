@@ -89,4 +89,13 @@ timeout to 14400 seconds; the job allows 270 minutes. Manifest docs/setup/unit/f
 commands, exit failures, check identity and other repository profiles remain
 unchanged. Local tests generate no accepted cache or model/scheduler effect.
 
-Bean Counter uses the manifest-owned pinned Rust/Python setup and local SQLite unit/e2e commands from qa-kit v0.6.6. Its hosted gate prepares Node.js 22 for frozen contract checks. No local runner, database service or customer credentials are required.
+Bean Counter retains the manifest-owned pinned Rust/Python setup and local SQLite unit/e2e commands from qa-kit v0.6.1, matching its existing v0.4.19 caller. Agency retains qa-kit v0.7.0; other callers retain v0.6.6. Its hosted gate prepares Node.js 22 for frozen contract checks. No local runner, database service or customer credentials are required.
+
+Its outer CI job allows 50 minutes: the unchanged sequential setup, unit and
+full E2E commands each retain their existing 900-second timeout (45 minutes
+combined), plus five minutes for workflow infrastructure. This administrative
+allowance is not a production limit, measured minimum or completion guarantee.
+The checker remains v0.4.4, with full manifest commands, failure behavior and
+check identity unchanged. Agents remain at 270 minutes; other callers remain
+at 15 minutes. Adoption requires the canonical workflow path at a published
+immutable release and a successful exact-candidate compliance run.

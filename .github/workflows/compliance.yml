@@ -25,7 +25,7 @@ jobs:
     permissions:
       contents: read
     runs-on: ${{ inputs.runner }}
-    timeout-minutes: ${{ inputs.repo == 'agents' && 270 || 15 }}
+    timeout-minutes: ${{ inputs.repo == 'agents' && 270 || inputs.repo == 'bean-counter' && 50 || 15 }}
     steps:
       - name: Guard trusted local agents runner before checkout
         if: inputs.repo == 'agents' && inputs.runner == 'beans-mac'
@@ -243,7 +243,7 @@ jobs:
           repository: stevekkall-beansgc/qa-kit
           # Agency's reviewed bootstrap prepares the immutable shared-QA
           # fixture before its adapter suite. Other legacy cohorts stay pinned.
-          ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || 'v0.6.6' }}
+          ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || inputs.repo == 'bean-counter' && 'v0.6.1' || 'v0.6.6' }}
           path: qa-kit
           persist-credentials: false
       # BeanFit App's local E2E drives the BeanFit CLI. Keep the fixture

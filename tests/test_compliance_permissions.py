@@ -21,7 +21,10 @@ class TestCompliancePermissions(unittest.TestCase):
         self.assertEqual(WORKFLOW.count("permissions:"), 2)
 
     def test_only_permissions_and_the_qa_caller_profile_change_the_frozen_workflow(self):
-        original = WORKFLOW.replace("\npermissions:\n  contents: read\n", "", 1)
+        # Undo only the separately hash-bound Bean Counter compatibility fix.
+        original = WORKFLOW.replace(" || inputs.repo == 'bean-counter' && 50", "", 1)
+        original = original.replace(" || inputs.repo == 'bean-counter' && 'v0.6.1'", "", 1)
+        original = original.replace("\npermissions:\n  contents: read\n", "", 1)
         original = original.replace("    permissions:\n      contents: read\n", "", 1)
         # Remove only the separately tested QA caller additions before comparing
         # the historical workflow. Other callers, pins, identities and guards
