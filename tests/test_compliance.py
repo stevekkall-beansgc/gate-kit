@@ -143,6 +143,55 @@ class TestMainContract(unittest.TestCase):
         self.assertEqual(verdict["failures"], 1)
         self.assertIn("infrastructure", verdict)
 
+    def _document_bytes_cli(self, invalid_document=None):
+        cli = Path(compliance.__file__).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            command = [sys.executable, "-c",
+                       "from pathlib import Path; "
+                       "p = Path('executed'); "
+                       "p.write_text(p.read_text() + 'ran' if p.exists() else 'ran')"]
+            repo = {"name": "synthetic", "status": "active", "path": str(root),
+                    **{label: {"cmd": command} for label in ("setup", "unit", "e2e")}}
+            (root / "AGENTS.md").write_bytes(
+                ("## Test commands\n" + " ".join(command) + "\nCafé checks\n").encode("utf-8"))
+            (root / "README.md").write_bytes("See AGENTS.md — Café\n".encode("utf-8"))
+            if invalid_document:
+                (root / invalid_document).write_bytes(b"synthetic-private-document\xff")
+            (root / "manifest.json").write_text(json.dumps({"repos": [repo]}))
+            process = subprocess.run(
+                [sys.executable, "-B", str(cli), "--repo", "synthetic", "--full"],
+                env={"QA_KIT_DIR": str(root), "HOME": str(home), "PATH": os.defpath,
+                     "PYTHONUTF8": "1"}, capture_output=True, text=True, timeout=10)
+            self.assertEqual(process.returncode, 1 if invalid_document else 0)
+            self.assertNotIn("Traceback", process.stderr)
+            verdict = json.loads(process.stdout.splitlines()[-1])
+            self.assertEqual(verdict["gate"], "compliance")
+            self.assertEqual(verdict["failures"], 1 if invalid_document else 0)
+            self.assertEqual(verdict["repos"][0]["verdict"],
+                             "FAIL" if invalid_document else "PASS")
+            checks = verdict["repos"][0]["checks"]
+            self.assertEqual([check["name"] for check in checks],
+                             ["docs", "setup", "unit", "e2e"])
+            self.assertEqual(checks[0]["ok"], not invalid_document)
+            self.assertEqual(checks[0]["detail"],
+                             f"cannot read {invalid_document}: invalid text encoding"
+                             if invalid_document else "")
+            self.assertTrue(all(check["ok"] for check in checks[1:]))
+            self.assertEqual((root / "executed").read_text(), "ranranran")
+            self.assertNotIn("synthetic-private-document", process.stdout + process.stderr)
+            self.assertNotIn(str(root), process.stdout + process.stderr)
+
+    def test_invalid_document_bytes_preserve_final_json(self):
+        for document in ("AGENTS.md", "README.md"):
+            with self.subTest(document=document):
+                self._document_bytes_cli(document)
+
+    def test_utf8_document_control_preserves_selected_commands(self):
+        self._document_bytes_cli()
+
     def test_permission_denied_entrypoint_preserves_final_json(self):
         cli = Path(compliance.__file__).resolve()
         with tempfile.TemporaryDirectory() as directory:

@@ -63,6 +63,8 @@ def docs_check(root, unit_cmd):
         return ["missing AGENTS.md"]
     try:
         text = ag.read_text()
+    except UnicodeError:
+        return ["cannot read AGENTS.md: invalid text encoding"]
     except OSError as e:
         return [f"cannot read AGENTS.md: {e}"]
     if "## Test commands" not in text:
@@ -74,6 +76,8 @@ def docs_check(root, unit_cmd):
     else:
         try:
             readme = rd.read_text()
+        except UnicodeError:
+            problems.append("cannot read README.md: invalid text encoding")
         except OSError as e:
             problems.append(f"cannot read README.md: {e}")
         else:
