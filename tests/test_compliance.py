@@ -143,6 +143,52 @@ class TestMainContract(unittest.TestCase):
         self.assertEqual(verdict["failures"], 1)
         self.assertIn("infrastructure", verdict)
 
+    def _command_output_cli(self, output, returncode):
+        cli = Path(compliance.__file__).resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            command = [sys.executable, "-c",
+                       "import sys; from pathlib import Path; "
+                       "Path('executed').write_text('ran'); "
+                       f"sys.stdout.buffer.write({output!r}); sys.exit({returncode})"]
+            repo = {"name": "synthetic", "status": "active", "path": str(root),
+                    "setup": {"cmd": ["/usr/bin/true"]},
+                    "unit": {"cmd": command}, "e2e": {"cmd": ["/usr/bin/true"]}}
+            (root / "AGENTS.md").write_text("## Test commands\n" + " ".join(command))
+            (root / "README.md").write_text("See AGENTS.md")
+            (root / "manifest.json").write_text(json.dumps({"repos": [repo]}))
+            process = subprocess.run(
+                [sys.executable, "-B", str(cli), "--repo", "synthetic", "--full"],
+                env={"QA_KIT_DIR": str(root), "HOME": str(home), "PATH": os.defpath,
+                     "PYTHONUTF8": "1"}, capture_output=True, text=True, timeout=10)
+            self.assertEqual(process.returncode, int(bool(returncode)))
+            self.assertNotIn("Traceback", process.stderr)
+            verdict = json.loads(process.stdout.splitlines()[-1])
+            self.assertEqual(verdict["gate"], "compliance")
+            self.assertEqual(verdict["failures"], int(bool(returncode)))
+            self.assertEqual(verdict["repos"][0]["verdict"], "FAIL" if returncode else "PASS")
+            checks = verdict["repos"][0]["checks"]
+            self.assertEqual([check["name"] for check in checks],
+                             ["docs", "setup", "unit", "e2e"])
+            self.assertTrue(all(check["ok"] for check in checks if check["name"] != "unit"))
+            self.assertEqual(checks[2]["ok"], not returncode)
+            self.assertEqual(checks[2]["detail"],
+                             output.decode("utf-8", errors="replace") if returncode else None)
+            self.assertEqual((root / "executed").read_text(), "ran")
+            self.assertNotIn(str(root), process.stdout + process.stderr)
+
+    def test_invalid_command_output_preserves_child_verdict(self):
+        for returncode in (0, 3):
+            with self.subTest(returncode=returncode):
+                self._command_output_cli(b"synthetic-output-\xff", returncode)
+
+    def test_utf8_command_output_control_preserves_child_verdict(self):
+        for returncode in (0, 3):
+            with self.subTest(returncode=returncode):
+                self._command_output_cli("synthetic-output-Café".encode("utf-8"), returncode)
+
     def _document_bytes_cli(self, invalid_document=None):
         cli = Path(compliance.__file__).resolve()
         with tempfile.TemporaryDirectory() as directory:

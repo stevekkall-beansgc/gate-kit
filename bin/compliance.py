@@ -42,7 +42,7 @@ def sh(cmd, cwd, env=None):
     t0 = time.monotonic()
     try:
         p = subprocess.run(cmd, cwd=str(cwd), env=env, capture_output=True,
-                           text=True, timeout=900)
+                           text=True, errors="replace", timeout=900)
         ok = p.returncode == 0
         tail = ((p.stdout or "") + "\n" + (p.stderr or ""))[-800:]
     except FileNotFoundError as e:
