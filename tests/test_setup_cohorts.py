@@ -23,7 +23,7 @@ class TestSetupCohorts(unittest.TestCase):
         step = WORKFLOW.split("uses: actions/setup-python@", 1)[1].split("      - name:", 1)[0]
         self.assertIn("if: inputs.runner != 'beans-mac'", step)
         expression = re.search(r"python-version: (\$\{\{ .+ \}\})", step).group(1)
-        for repo, version in (("beanlabs", "3.14"), ("qa-kit", "3.12"),
+        for repo, version in (("beanlabs", "3.14"), ("qa-kit", "3.12"), ("gate-kit", "3.12"),
                               ("agents", "3.13"), ("agency", "3.13"),
                               ("bean-counter", "3.13"), ("unknown", "3.13")):
             with self.subTest(repo=repo):

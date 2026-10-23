@@ -21,8 +21,10 @@ qa-kit `v0.7.0` for its conditional public executor-fixture bootstrap; it remain
 unenrolled and retains all manifest-owned unit/full commands and runner guards.
 Core (`beanlabs`) and Beanstalk (`agents`) select QA `v0.7.10` for their owned
 clean-test setup repairs. Core hosted execution selects CPython 3.14 and Node 22;
-its existing Mac route uses preinstalled runtimes. Other runtime selections stay
-unchanged. Beanstalk remains local-only; this change does not qualify or restore
+its existing Mac route uses preinstalled runtimes. Gate Kit and QA Kit select
+their canonical Python 3.12 on hosted runners and the existing Mac, where the
+workflow checks the installed Homebrew interpreter before adding it to PATH.
+Other runtime selections stay unchanged. Beanstalk remains local-only; this change does not qualify or restore
 its retained hosted profile.
 Workflow-only releases can keep the
 released CLI pin when its contract is unchanged. Callers pin an immutable
