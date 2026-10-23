@@ -140,6 +140,13 @@ restore or qualify its retained hosted profile. Coverage and runner guards remai
 as before. [The adapter contract](VALIDATION-ADAPTER.md) describes preparation,
 strict fixture tests, evidence limits, and the staged workflow adoption boundary.
 
+Gate Kit and QA Kit use their canonical Python 3.12 in the reusable workflow.
+Hosted jobs select that version; existing Mac jobs verify and select the installed
+Homebrew Python 3.12 without installing a runtime. This Gate-only addition retains
+all other caller selections. The older Gate v0.4.11 workflow used QA v0.4.0's
+syntax-only Gate command on Python 3.13; QA v0.6.6 runs the full Gate unit suite,
+which requires the same Python 3.12 as `task validate` and the dedicated test job.
+
 The separately qualified Mac pilot policy is inactive until a reviewed control
 bundle, workflow and repository-scoped runner registration are adopted. It
 accepts only exact main pushes for the two fixed pilot repositories and named
