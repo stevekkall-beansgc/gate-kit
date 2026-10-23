@@ -41,13 +41,13 @@ class TestSh(unittest.TestCase):
     def test_timeout_fails_closed(self):
         # The checker is source-pinned by CI, so retain its production 900s
         # argument while shortening only the real subprocess for this test.
-        real_run = compliance.subprocess.run
+        real_communicate = compliance.subprocess.Popen.communicate
 
-        def short_run(*args, **kwargs):
+        def short_communicate(process, *args, **kwargs):
             self.assertEqual(kwargs["timeout"], 900)
-            return real_run(*args, **{**kwargs, "timeout": 0.1})
+            return real_communicate(process, *args, **{**kwargs, "timeout": 0.1})
 
-        with mock.patch.object(compliance.subprocess, "run", side_effect=short_run):
+        with mock.patch.object(compliance.subprocess.Popen, "communicate", short_communicate):
             r = compliance.sh([sys.executable, "-c", "import time; time.sleep(10)"],
                               Path(tempfile.gettempdir()))
         self.assertFalse(r["ok"])
