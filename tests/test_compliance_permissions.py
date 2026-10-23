@@ -3,6 +3,7 @@
 import hashlib
 import unittest
 from pathlib import Path
+from workflow_checker_pin import before_workflow_adoption
 
 
 WORKFLOW = (Path(__file__).resolve().parents[1] / ".github/workflows/compliance.yml").read_text()
@@ -21,8 +22,8 @@ class TestCompliancePermissions(unittest.TestCase):
         self.assertEqual(WORKFLOW.count("permissions:"), 2)
 
     def test_only_permissions_and_the_qa_caller_profile_change_the_frozen_workflow(self):
-        # Undo only the separately hash-bound Bean Counter compatibility fix.
-        original = WORKFLOW.replace(" || inputs.repo == 'bean-counter' && 50", "", 1)
+        # Undo only the separately proven checker and Bean Counter changes.
+        original = before_workflow_adoption(WORKFLOW).replace(" || inputs.repo == 'bean-counter' && 50", "", 1)
         original = original.replace(" || inputs.repo == 'bean-counter' && 'v0.6.1'", "", 1)
         original = original.replace("\npermissions:\n  contents: read\n", "", 1)
         original = original.replace("    permissions:\n      contents: read\n", "", 1)

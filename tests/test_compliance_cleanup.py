@@ -14,7 +14,9 @@ import compliance
 
 @unittest.skipUnless(os.name == "posix", "the supported runners are POSIX")
 class TestCheckCleanup(unittest.TestCase):
-    def _descendant(self, *, parent_exits=False, cancelled=False):
+    def _descendant(self, *, parent_exits=False, cancelled=False,
+                    runner=None, timeout=900):
+        runner = runner or compliance.sh
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             # The child ignores TERM and is bounded even if the assertion or
@@ -36,7 +38,7 @@ class TestCheckCleanup(unittest.TestCase):
             real_communicate = subprocess.Popen.communicate
 
             def bounded_communicate(process, *args, **kwargs):
-                self.assertEqual(kwargs["timeout"], 900)
+                self.assertEqual(kwargs["timeout"], timeout)
                 deadline = time.monotonic() + 3
                 while not (root / "ready").exists() and time.monotonic() < deadline:
                     time.sleep(0.01)
@@ -49,12 +51,12 @@ class TestCheckCleanup(unittest.TestCase):
                 with mock.patch.object(subprocess.Popen, "communicate", bounded_communicate):
                     if cancelled:
                         with self.assertRaises(KeyboardInterrupt):
-                            compliance.sh([sys.executable, "-c", parent], root)
+                            runner([sys.executable, "-c", parent], root)
                     else:
-                        result = compliance.sh([sys.executable, "-c", parent], root)
+                        result = runner([sys.executable, "-c", parent], root)
                         self.assertEqual(set(result), {"ok", "secs", "tail"})
                         self.assertFalse(result["ok"])
-                        self.assertEqual(result["tail"], "timeout 900s")
+                        self.assertEqual(result["tail"], f"timeout {timeout}s")
                         self.assertLess(result["secs"], 5)
             finally:
                 # On the old implementation the orphan acknowledges this file

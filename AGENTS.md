@@ -14,11 +14,16 @@ The eligible fleet is explicit: manifest rows with status `active` or
 `unit-only`. CI passes the caller checkout with `--root caller`; missing
 registry infrastructure, repo roots, or required entrypoints fail closed.
 
-The reusable workflow executes the unchanged CLI from immutable `v0.4.4`
+The reusable workflow executes the unchanged CLI from immutable `v0.7.6`
 and the manifest from qa-kit `v0.6.6`, with the BeanFit CLI fixture pinned
 to immutable `v0.4.0`. The explicitly qualified Agency legacy cohort alone uses
 qa-kit `v0.7.0` for its conditional public executor-fixture bootstrap; it remains
 unenrolled and retains all manifest-owned unit/full commands and runner guards.
+Core (`beanlabs`) and Beanstalk (`agents`) select QA `v0.7.10` for their owned
+clean-test setup repairs. Core hosted execution selects CPython 3.14 and Node 22;
+its existing Mac route uses preinstalled runtimes. Other runtime selections stay
+unchanged. Beanstalk remains local-only; this change does not qualify or restore
+its retained hosted profile.
 Workflow-only releases can keep the
 released CLI pin when its contract is unchanged. Callers pin an immutable
 workflow release; never publish a workflow that checks out `main`.
@@ -51,8 +56,8 @@ because its macOS packages require GitHub's non-portable hosted-toolcache path.
   new bridge preserves the existing docs check and rejects partial coverage as
   full compliance. Initial enrolled CI is hosted push/PR only; protected agents
   and BeanMind retain their separately qualified profiles. The existing reusable
-  workflow retains its legacy checker/fixture pins and old QA manifest for every
-  cohort except the explicitly qualified Agency bootstrap described above.
+  workflow selects the released checker with descendant cleanup and retains
+  fixture pins and the explicitly scoped QA manifest cohorts described above.
 - The inactive Mac pilot adapter supports only reviewed main pushes for the
   two fixed pilot repositories, with exact new repo-scoped runner names,
   macOS/ARM64 runtime variants, full central CI selection and source/event guards.
@@ -89,13 +94,13 @@ timeout to 14400 seconds; the job allows 270 minutes. Manifest docs/setup/unit/f
 commands, exit failures, check identity and other repository profiles remain
 unchanged. Local tests generate no accepted cache or model/scheduler effect.
 
-Bean Counter retains the manifest-owned pinned Rust/Python setup and local SQLite unit/e2e commands from qa-kit v0.6.1, matching its existing v0.4.19 caller. Agency retains qa-kit v0.7.0; other callers retain v0.6.6. Its hosted gate prepares Node.js 22 for frozen contract checks. No local runner, database service or customer credentials are required.
+Bean Counter retains the manifest-owned pinned Rust/Python setup and local SQLite unit/e2e commands from qa-kit v0.6.1, matching its existing v0.4.19 caller. Agency retains qa-kit v0.7.0; Core and agents select v0.7.10; other callers retain v0.6.6. Its hosted gate prepares Node.js 22 for frozen contract checks. No local runner, database service or customer credentials are required.
 
 Its outer CI job allows 50 minutes: the unchanged sequential setup, unit and
 full E2E commands each retain their existing 900-second timeout (45 minutes
 combined), plus five minutes for workflow infrastructure. This administrative
 allowance is not a production limit, measured minimum or completion guarantee.
-The checker remains v0.4.4, with full manifest commands, failure behavior and
+The workflow selects checker v0.7.6, with full manifest commands, failure behavior and
 check identity unchanged. Agents remain at 270 minutes; other callers remain
 at 15 minutes. Adoption requires the canonical workflow path at a published
 immutable release and a successful exact-candidate compliance run.

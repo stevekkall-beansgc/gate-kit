@@ -603,8 +603,8 @@ class TestWorkflowContract(unittest.TestCase):
         workflow = (Path(__file__).resolve().parents[1] /
                     ".github/workflows/compliance.yml").read_text()
         self.assertIn("path: gate-kit", workflow)
-        self.assertIn("ref: v0.4.4", workflow)
-        self.assertIn("ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || inputs.repo == 'bean-counter' && 'v0.6.1' || 'v0.6.6' }}", workflow)
+        self.assertIn("ref: v0.7.6", workflow)
+        self.assertIn("ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || inputs.repo == 'bean-counter' && 'v0.6.1' || (inputs.repo == 'beanlabs' || inputs.repo == 'agents') && 'v0.7.10' || 'v0.6.6' }}", workflow)
         self.assertIn("ref: v0.4.0", workflow)
         self.assertIn("python3 gate-kit/bin/compliance.py", workflow)
         self.assertIn("--root caller", workflow)
@@ -628,7 +628,7 @@ class TestWorkflowContract(unittest.TestCase):
             text = (root / doc).read_text()
             self.assertIn("v0.6.6", text, f"{doc} must document qa-kit v0.6.6 pin")
             self.assertNotIn("v0.4.3", text, f"{doc} must not reference the retired qa-kit pin")
-            self.assertIn("v0.4.4", text, f"{doc} must keep the immutable gate-kit CLI pin")
+            self.assertIn("v0.7.6", text, f"{doc} must keep the immutable gate-kit CLI pin")
 
     def test_beanfit_fixture_pin_documented_accurately_in_repo_docs(self):
         root = Path(__file__).resolve().parents[1]
@@ -643,7 +643,7 @@ class TestWorkflowContract(unittest.TestCase):
     def test_readme_quickstart_and_release_pins_match_checkout(self):
         root = Path(__file__).resolve().parents[1]
         entry = (root / "README.md").read_text()
-        self.assertIn("README-REFERENCE.md#6-release-pins-in-v0424", entry)
+        self.assertIn("README-REFERENCE.md#6-workflow-release-pins", entry)
         self.assertIn("python3 examples/synthetic_quickstart.py", entry)
         self.assertIn("they execute locally with the user's", entry)
         readme = entry + "\n" + (root / "README-REFERENCE.md").read_text()
@@ -656,7 +656,7 @@ class TestWorkflowContract(unittest.TestCase):
                 "## 3. Follow the implementation",
                 "## 4. Failure-mode proof",
                 "## 5. Supported scope",
-                "## 6. Release pins in v0.4.24"):
+                "## 6. Workflow release pins"):
             self.assertIn(heading, readme)
         for link in (
                 "[`bin/compliance.py`](bin/compliance.py)",
@@ -674,13 +674,13 @@ class TestWorkflowContract(unittest.TestCase):
             match = re.search(r"\n\s+ref:\s*(\S+)", checkout)
             self.assertIsNotNone(match)
             if repository == "stevekkall-beansgc/qa-kit":
-                self.assertIn("ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || inputs.repo == 'bean-counter' && 'v0.6.1' || 'v0.6.6' }}", checkout)
-                for ref in ("v0.7.0", "v0.6.1", "v0.6.6"):
+                self.assertIn("ref: ${{ inputs.repo == 'agency' && 'v0.7.0' || inputs.repo == 'bean-counter' && 'v0.6.1' || (inputs.repo == 'beanlabs' || inputs.repo == 'agents') && 'v0.7.10' || 'v0.6.6' }}", checkout)
+                for ref in ("v0.7.0", "v0.6.1", "v0.7.10", "v0.6.6"):
                     self.assertIn(f"`{ref}`", readme)
             else:
                 self.assertIn(f"`{match.group(1)}`", readme)
         self.assertIn("The earlier `v0.4.20` workflow used QA manifest `v0.6.1`", readme)
-        self.assertIn("immutable `v0.4.4`", readme)
+        self.assertIn("immutable `v0.7.6`", readme)
         self.assertIn("not a claim about release recency", readme)
 
     def test_caller_checkout_is_the_reviewed_commit(self):
@@ -702,7 +702,7 @@ class TestWorkflowContract(unittest.TestCase):
                     ".github/workflows/compliance.yml").read_text()
         guard = workflow.split("uses: actions/setup-node@", 1)[0].rsplit("if:", 1)[-1].strip()
         self.assertEqual(
-            guard, "${{ inputs.repo == 'agency' || inputs.repo == 'beanfit-app' || inputs.repo == 'bean-counter' }}")
+            guard, "${{ inputs.repo == 'agency' || inputs.repo == 'beanfit-app' || inputs.repo == 'bean-counter' || (inputs.repo == 'beanlabs' && inputs.runner != 'beans-mac') }}")
         covered = {name for name in ("agency", "beanfit-app", "bean-counter")
                    if f"inputs.repo == '{name}'" in guard}
         self.assertEqual(covered, {"agency", "beanfit-app", "bean-counter"})
