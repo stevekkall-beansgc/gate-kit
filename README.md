@@ -70,7 +70,7 @@ prerequisites, Task 3 and Python 3.12, `task validate` runs the existing checks.
 ## Compatibility and limits
 
 Workflow releases and checker releases are separate. The
-[release-pin guide](README-REFERENCE.md#6-release-pins-in-v0424) records their
+[release-pin guide](README-REFERENCE.md#6-workflow-release-pins) records their
 fixed refs; a newer workflow tag does not imply a newer checker.
 [The adapter contract](VALIDATION-ADAPTER.md) explains opt-in validation.
 Installing an adapter does not enroll or activate a repository.

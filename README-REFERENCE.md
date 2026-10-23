@@ -77,8 +77,8 @@ timeout or Python interruption, it kills that group and reaps the direct child,
 including when the command's leader has already exited. A timeout keeps the
 existing failed verdict; interruption propagates to the caller. This contains
 ordinary descendants, not processes that deliberately create a new session.
-Released workflow callers continue to use their pinned checker until separately
-updated.
+Callers pinned to earlier workflow releases continue to use their old checker
+until explicitly updated to a workflow release that adopts this repair.
 
 ## 5. Supported scope
 
@@ -94,19 +94,22 @@ The reusable workflow defaults to `ubuntu-latest`. A trusted push caller may sel
 
 This repository is a compliance gate, not a dependency scanner, history auditor, credential manager, deployment system, or security certification. The report-only zizmor job runs the pinned `ghcr.io/zizmorcore/zizmor:1.28.0@sha256:8e6b3e4fb74d1aa5d23e83ea369f386c66eced0d1fb944d32cd8b2aac100b00d` container directly with `--network none`, mounts only the checkout read-only, passes no GitHub token or secret, and scans only gate-kit's own checked-in workflow definitions. It does not inspect or certify caller repositories. The synthetic demo proves the local gate contract; it does not establish any claim about a repository's history, dependencies, production security, or external services.
 
-## 6. Release pins in v0.4.24
+## 6. Workflow release pins
 
-The workflow release and the checker release are separate contracts. The reusable workflow released with `v0.4.24` intentionally checks out the following fixed release refs:
+The workflow release and the checker release are separate contracts. This workflow selects the released `v0.7.6` checker with descendant cleanup. Existing callers retain their current pins until explicitly updated to a separately published workflow release. The fixed refs are:
 
 | Purpose | Repository | Pin | Checked-out path |
 | --- | --- | --- | --- |
-| Compliance checker | `gate-kit` | `v0.4.4` | `gate-kit` |
-| QA manifest | `qa-kit` | `v0.6.6` | `qa-kit` |
+| Compliance checker | `gate-kit` | `v0.7.6` | `gate-kit` |
+| QA manifest, Core and agents | `qa-kit` | `v0.7.10` | `qa-kit` |
+| QA manifest, Agency | `qa-kit` | `v0.7.0` | `qa-kit` |
+| QA manifest, Bean Counter | `qa-kit` | `v0.6.1` | `qa-kit` |
+| QA manifest, other callers | `qa-kit` | `v0.6.6` | `qa-kit` |
 | BeanFit CLI fixture used by `beanfit-app` e2e | `BeanFit` | `v0.4.0` | `beanfit` |
 
 For ordinary callers, the workflow then runs the pinned checker as `python3 gate-kit/bin/compliance.py`, points `QA_KIT_DIR` at the checked-out `qa-kit` manifest, and passes `--root caller` for the reviewed caller checkout. It does not run a moving `main` checkout of the checker. For the `agents` profile, the workflow verifies the pinned checker source and changes only its command timeout literals from 900 to 14400 seconds before running the adapted copy; check names, commands, and failure semantics remain the same.
 
-`v0.4.24` therefore identifies the reusable workflow release, not a claim that the checker is also `v0.4.24`. Keeping the immutable `v0.4.4` checker pin is intentional when its contract is unchanged. The three refs above are release-specific compatibility pins, not a claim about release recency. The earlier `v0.4.20` workflow used QA manifest `v0.6.1`; its manifest pin must be read from that release's workflow.
+The immutable `v0.7.6` checker also contains previously released fail-closed validation and text/launch-error handling fixes. The source fixture and both agents integrity hashes match that release; only the two timeout literals change for agents. The refs above are release-specific compatibility pins, not a claim about release recency. The earlier `v0.4.20` workflow used QA manifest `v0.6.1`; its manifest pin must be read from that release's workflow.
 
 gate-kit's internal caller is the sole reusable-workflow ref-pin exception: `.github/workflows/gate.yml` must use `stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.4.11`, an immutable annotated semver tag. This own annotated tag is never moved, and the separate release gate proves the referenced workflow SHA before release. The root `zizmor.yml` applies `hash-pin` to every other action identity, so third-party actions remain pinned to full 40-character commit SHAs.
 
@@ -128,9 +131,13 @@ enrolled bridge to QA Kit's shared executor. It verifies pinned control sources,
 GitHub event/repository/head identity, and required coverage while retaining the
 existing documentation check. Installing it does not enroll a repository. The
 Agency legacy cohort alone uses the published QA `v0.7.0` manifest so its reviewed
-conditional setup can prepare the public executor fixture. Every other legacy
-cohort retains QA `v0.6.6`; checker/fixture pins, full coverage and runner guards
-remain as before. [The adapter contract](VALIDATION-ADAPTER.md) describes preparation,
+conditional setup can prepare the public executor fixture. Core (`beanlabs`) and
+Beanstalk (`agents`) select QA `v0.7.10` for their clean-test setup repairs; Bean
+Counter retains `v0.6.1`, and other cohorts retain `v0.6.6`. Core hosted execution
+selects CPython 3.14 and Node 22, matching its owned setup. Existing Mac execution
+uses preinstalled runtimes. Beanstalk remains local-only; this change does not
+restore or qualify its retained hosted profile. Coverage and runner guards remain
+as before. [The adapter contract](VALIDATION-ADAPTER.md) describes preparation,
 strict fixture tests, evidence limits, and the staged workflow adoption boundary.
 
 The separately qualified Mac pilot policy is inactive until a reviewed control

@@ -17,9 +17,9 @@ WORKFLOW = (ROOT / '.github/workflows/compliance.yml').read_text()
 PROFILE = textwrap.dedent(WORKFLOW.split("      - name: Prepare isolated agents compliance profile\n", 1)[1].split("python3 - <<'PY'\n", 1)[1].split('          PY\n', 1)[0])
 NS = {'__name__': 'profile_test'}
 exec(compile(PROFILE, '<workflow-profile>', 'exec'), NS)
-# The workflow checks out immutable v0.4.4 (bbf2f16096d6c2e13228de2f68c804fdff8da7d8),
+# The workflow checks out immutable v0.7.6 (ebe1e9a67849b6d947de99bb850259930cbb8e58),
 # independently of the moving CLI. adapt_checker verifies these exact bytes.
-CHECKER = (ROOT / 'tests/fixtures/compliance-v0.4.4.py').read_text()
+CHECKER = (ROOT / 'tests/fixtures/compliance-v0.7.6.py').read_text()
 ENV = {'RUNNER_ENVIRONMENT': 'github-hosted', 'RUNNER_OS': 'macOS', 'GATE_RUNNER': 'macos-15'}
 SHA = 'a' * 40
 
@@ -43,7 +43,7 @@ class TestTimeoutAdaptation(unittest.TestCase):
             elif isinstance(node, ast.Constant) and node.value == 'timeout 14400s':
                 changed.append(node.value)
                 node.value = 'timeout 900s'
-        self.assertEqual(changed, [14400, 'timeout 14400s'])
+        self.assertCountEqual(changed, [14400, 'timeout 14400s'])
         self.assertEqual(ast.dump(before), ast.dump(after))
 
     def test_real_checker_keeps_docs_setup_unit_full_and_failures(self):
@@ -73,11 +73,14 @@ class TestTimeoutAdaptation(unittest.TestCase):
     def test_timeout_still_fails_with_correct_budget(self):
         namespace = {'__name__': 'adapted_test', '__file__': str(ROOT/'bin/compliance.py')}
         exec(compile(NS['adapt_checker'](CHECKER), '<adapted-checker>', 'exec'), namespace)
-        with mock.patch.object(subprocess, 'run', side_effect=subprocess.TimeoutExpired(['test'], 14400)) as run:
-            result = namespace['sh'](['test'], ROOT)
+        real_communicate = subprocess.Popen.communicate
+        def short_communicate(process, *args, **kwargs):
+            self.assertEqual(kwargs['timeout'], 14400)
+            return real_communicate(process, *args, **{**kwargs, 'timeout': 0.1})
+        with mock.patch.object(subprocess.Popen, 'communicate', short_communicate):
+            result = namespace['sh']([sys.executable, '-c', 'import time; time.sleep(10)'], ROOT)
         self.assertFalse(result['ok'])
         self.assertEqual(result['tail'], 'timeout 14400s')
-        self.assertEqual(run.call_args.kwargs['timeout'], 14400)
 
 
 class TestCanonicalPreparation(unittest.TestCase):

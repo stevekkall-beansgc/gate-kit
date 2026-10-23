@@ -33,9 +33,9 @@ class LocalFixture(unittest.TestCase):
             path.mkdir(parents=True)
         for path in (self.canonical, self.workspace/'caller'):
             (path/'source.py').write_text('original source\n')
-        # Match the workflow's immutable v0.4.4 checker, not the moving CLI.
+        # Match the workflow's immutable v0.7.6 checker, not the moving CLI.
         # The wrapper still verifies the unchanged adapted-source digest.
-        checker = (ROOT/'tests/fixtures/compliance-v0.4.4.py').read_text().rstrip('\n').replace('timeout=900','timeout=14400').replace('timeout 900s','timeout 14400s')+'\n'
+        checker = (ROOT/'tests/fixtures/compliance-v0.7.6.py').read_text().rstrip('\n').replace('timeout=900','timeout=14400').replace('timeout 900s','timeout 14400s')+'\n'
         (self.workspace/'compliance-with-suite-timeout.py').write_text(checker)
         self.env = {'RUNNER_ENVIRONMENT': 'self-hosted', 'RUNNER_OS': 'macOS', 'GATE_RUNNER': 'beans-mac',
                     'GATE_REPO': 'agents', 'GATE_EVENT_NAME': 'push', 'GATE_REPOSITORY': NS['REPOSITORY'],
