@@ -111,7 +111,7 @@ For ordinary callers, the workflow then runs the pinned checker as `python3 gate
 
 The immutable `v0.7.6` checker also contains previously released fail-closed validation and text/launch-error handling fixes. The source fixture and both agents integrity hashes match that release; only the two timeout literals change for agents. The refs above are release-specific compatibility pins, not a claim about release recency. The earlier `v0.4.20` workflow used QA manifest `v0.6.1`; its manifest pin must be read from that release's workflow.
 
-gate-kit's internal caller is the sole reusable-workflow ref-pin exception: `.github/workflows/gate.yml` must use `stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.4.11`, an immutable annotated semver tag. This own annotated tag is never moved, and the separate release gate proves the referenced workflow SHA before release. The root `zizmor.yml` applies `hash-pin` to every other action identity, so third-party actions remain pinned to full 40-character commit SHAs.
+gate-kit's internal caller is the sole reusable-workflow ref-pin exception: `.github/workflows/gate.yml` must use `stevekkall-beansgc/gate-kit/.github/workflows/compliance.yml@v0.7.8`, an immutable annotated semver tag. This own annotated tag is never moved, and the separate release gate proves the referenced workflow SHA before release. The root `zizmor.yml` applies `hash-pin` to every other action identity, so third-party actions remain pinned to full 40-character commit SHAs.
 
 ## Repository checks
 

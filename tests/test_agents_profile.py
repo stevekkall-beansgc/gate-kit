@@ -157,6 +157,14 @@ class TestCanonicalPreparation(unittest.TestCase):
 
 class TestActualShellRouting(unittest.TestCase):
     def test_both_profiles_full_flag_env_and_pipeline_failure(self):
+        self._assert_shell_routing()
+
+    def test_hosted_routing_ignores_inherited_local_runner_context(self):
+        with mock.patch.dict(os.environ, {'GATE_RUNNER': 'beans-mac',
+                                          'RUNNER_TEMP': '/synthetic/ambient-runner'}):
+            self._assert_shell_routing()
+
+    def _assert_shell_routing(self):
         step = WORKFLOW.split('      - name: Run compliance gate\n', 1)[1].split('      - name: Attach summary', 1)[0]
         script = textwrap.dedent(step.split('        run: |\n', 1)[1])
         for repo in ('agents', 'agency'):
@@ -169,7 +177,8 @@ class TestActualShellRouting(unittest.TestCase):
                         shim.chmod(0o700)
                         capture = root/'capture.txt'
                         env = {**os.environ, 'PATH': str(root)+os.pathsep+os.environ['PATH'], 'GATE_REPO': repo,
-                               'GATE_FULL': full, 'CAPTURE': str(capture), 'TEST_EXIT': str(code), 'PYTHONPATH': 'unchanged'}
+                               'GATE_RUNNER': 'macos-15', 'GATE_FULL': full,
+                               'CAPTURE': str(capture), 'TEST_EXIT': str(code), 'PYTHONPATH': 'unchanged'}
                         result = subprocess.run(['/bin/bash', '-e', '-c', script], cwd=root, env=env, capture_output=True, text=True)
                         self.assertEqual(result.returncode, code, result.stderr)
                         argv, pythonpath = capture.read_text().splitlines()
