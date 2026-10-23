@@ -21,6 +21,7 @@ gate's red ❌ becomes binding via `ag release --require-pr-green` (Phase 2).
 import argparse
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -41,10 +42,27 @@ def expand(p):
 def sh(cmd, cwd, env=None):
     t0 = time.monotonic()
     try:
-        p = subprocess.run(cmd, cwd=str(cwd), env=env, capture_output=True,
-                           text=True, errors="replace", timeout=900)
-        ok = p.returncode == 0
-        tail = ((p.stdout or "") + "\n" + (p.stderr or ""))[-800:]
+        with subprocess.Popen(cmd, cwd=str(cwd), env=env,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True, errors="replace",
+                              start_new_session=(os.name == "posix")) as p:
+            try:
+                stdout, stderr = p.communicate(timeout=900)
+            except BaseException:
+                # A shell's children can outlive it, even when the leader has
+                # already exited. Kill the isolated group before reaping the
+                # direct child; do not wait for inherited pipes to reach EOF.
+                try:
+                    if os.name == "posix":
+                        os.killpg(p.pid, signal.SIGKILL)
+                    else:
+                        p.kill()
+                except ProcessLookupError:
+                    pass
+                p.wait()
+                raise
+            ok = p.returncode == 0
+            tail = ((stdout or "") + "\n" + (stderr or ""))[-800:]
     except FileNotFoundError as e:
         ok, tail = False, f"entrypoint missing (or working directory missing): {e}"
     except PermissionError:

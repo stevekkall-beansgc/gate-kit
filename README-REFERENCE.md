@@ -72,6 +72,14 @@ The checker treats all of these as failures:
 
 A failed check increments the failure count. The process returns `1` when any check fails and `0` only when every selected check passes.
 
+The local checker starts each command in a separate POSIX process group. On a
+timeout or Python interruption, it kills that group and reaps the direct child,
+including when the command's leader has already exited. A timeout keeps the
+existing failed verdict; interruption propagates to the caller. This contains
+ordinary descendants, not processes that deliberately create a new session.
+Released workflow callers continue to use their pinned checker until separately
+updated.
+
 ## 5. Supported scope
 
 The manifest is the source of eligibility and commands:
