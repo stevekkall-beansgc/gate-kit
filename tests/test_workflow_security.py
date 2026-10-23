@@ -96,7 +96,7 @@ class TestWorkflowSecurityCheck(unittest.TestCase):
                 self.assertRegex(ref, r"^[0-9a-f]{40}$")
         for action, ref in re.findall(r"uses: ([^@\s]+)@([^\s#]+)", GATE):
             if action == INTERNAL_WORKFLOW:
-                self.assertEqual(ref, "v0.4.11")
+                self.assertEqual(ref, "v0.7.7")
             else:
                 self.assertRegex(ref, r"^[0-9a-f]{40}$")
 
