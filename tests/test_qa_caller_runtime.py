@@ -13,10 +13,10 @@ WORKFLOW = (ROOT / '.github/workflows/compliance.yml').read_text()
 
 
 class QaCallerRuntime(unittest.TestCase):
-    def test_runtime_selection_is_qa_only_and_pins_stay_immutable(self):
-        self.assertIn("python-version: ${{ inputs.repo == 'beanlabs' && '3.14' || inputs.repo == 'qa-kit' && '3.12' || '3.13' }}", WORKFLOW)
-        local = WORKFLOW.split('      - name: Select QA Kit caller Python 3.12')[1].split('      - name: Configure')[0]
-        self.assertIn("if: inputs.repo == 'qa-kit' && inputs.runner == 'beans-mac'", local)
+    def test_runtime_selection_is_qa_and_gate_only_and_pins_stay_immutable(self):
+        self.assertIn("python-version: ${{ inputs.repo == 'beanlabs' && '3.14' || (inputs.repo == 'qa-kit' || inputs.repo == 'gate-kit') && '3.12' || '3.13' }}", WORKFLOW)
+        local = WORKFLOW.split('      - name: Select QA and Gate Kit caller Python 3.12')[1].split('      - name: Configure')[0]
+        self.assertIn("if: (inputs.repo == 'qa-kit' || inputs.repo == 'gate-kit') && inputs.runner == 'beans-mac'", local)
         self.assertIn('test -x "$qa_python"', local)
         self.assertIn('sys.version_info[:2] != (3, 12)', local)
         self.assertNotIn('setup-python', local)

@@ -257,12 +257,12 @@ jobs:
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         if: inputs.runner != 'beans-mac'
         with:
-          python-version: ${{ inputs.repo == 'beanlabs' && '3.14' || inputs.repo == 'qa-kit' && '3.12' || '3.13' }}
+          python-version: ${{ inputs.repo == 'beanlabs' && '3.14' || (inputs.repo == 'qa-kit' || inputs.repo == 'gate-kit') && '3.12' || '3.13' }}
       - name: Verify preinstalled self-hosted Python
         if: inputs.runner == 'beans-mac'
         run: python3 --version
-      - name: Select QA Kit caller Python 3.12 on the existing Mac
-        if: inputs.repo == 'qa-kit' && inputs.runner == 'beans-mac'
+      - name: Select QA and Gate Kit caller Python 3.12 on the existing Mac
+        if: (inputs.repo == 'qa-kit' || inputs.repo == 'gate-kit') && inputs.runner == 'beans-mac'
         shell: bash
         run: |
           set -euo pipefail
