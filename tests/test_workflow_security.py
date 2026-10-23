@@ -90,13 +90,13 @@ class TestWorkflowSecurityCheck(unittest.TestCase):
             "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
             TEST,
         )
-        self.assertEqual(GATE.count(f"uses: {INTERNAL_WORKFLOW}@v0.4.11"), 1)
+        self.assertEqual(GATE.count(f"uses: {INTERNAL_WORKFLOW}@v0.7.8"), 1)
         for workflow in (COMPLIANCE, TEST, WORKFLOW):
             for _, ref in re.findall(r"uses: ([^@\s]+)@([^\s#]+)", workflow):
                 self.assertRegex(ref, r"^[0-9a-f]{40}$")
         for action, ref in re.findall(r"uses: ([^@\s]+)@([^\s#]+)", GATE):
             if action == INTERNAL_WORKFLOW:
-                self.assertEqual(ref, "v0.4.11")
+                self.assertEqual(ref, "v0.7.8")
             else:
                 self.assertRegex(ref, r"^[0-9a-f]{40}$")
 
