@@ -164,4 +164,4 @@ existing repository-scoped Mac runner. Pull requests continue to use the hosted
 
 ### Bean Fleet hosted compliance
 
-The `bean-fleet` profile uses GitHub-hosted macOS 15 arm64, Python 3.14, Node 22 and full QA checks. Its vendored Commons inventory and public wheel lock are checked against reviewed digests before setup. The fleet-specific QA manifest pin is `v0.7.11`. This profile adds no private-repository token, provider credential or execution authority.
+The `bean-fleet` profile uses GitHub-hosted macOS 15 arm64, Python 3.14, Node 22 and full QA checks. Its vendored Commons inventory and public wheel lock are checked against reviewed digests before setup. The fleet-specific QA manifest pin is `v0.8.0`. This profile adds no private-repository token, provider credential or execution authority.

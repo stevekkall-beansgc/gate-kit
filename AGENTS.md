@@ -109,4 +109,4 @@ immutable release and a successful exact-candidate compliance run.
 
 ## Bean Fleet hosted profile
 
-`bean-fleet` uses only GitHub-hosted macOS 15 arm64 with Python 3.14, Node 22 and full manifest checks. The workflow validates the pinned vendored Commons inventory and public dependency-lock digests before installing hash-verified wheels. It uses no private checkout token or provider credentials. The QA manifest selection is `v0.7.11`; its release must exist before this workflow can be released. Vendor or dependency changes require a reviewed pin update. Pull requests use hosted runners and receive no added secrets.
+`bean-fleet` uses only GitHub-hosted macOS 15 arm64 with Python 3.14, Node 22 and full manifest checks. The workflow validates the pinned vendored Commons inventory and public dependency-lock digests before installing hash-verified wheels. It uses no private checkout token or provider credentials. The QA manifest selection is `v0.8.0`; its release must exist before this workflow can be released. Vendor or dependency changes require a reviewed pin update. Pull requests use hosted runners and receive no added secrets.

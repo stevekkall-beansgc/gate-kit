@@ -9,7 +9,7 @@ class FleetProfileTests(unittest.TestCase):
  def test_exact_fleet_delta_and_pinned_historical_source(self):
   previous=before_fleet(WORKFLOW)
   self.assertEqual(hashlib.sha256(previous.encode()).hexdigest(), '7291f419cb81335fc553ebb64bc4a6c74cad80e6feb92c406a46a03ace6a7060')
-  self.assertIn("inputs.repo == 'bean-fleet' && 'v0.7.11'",WORKFLOW)
+  self.assertIn("inputs.repo == 'bean-fleet' && 'v0.8.0'",WORKFLOW)
   self.assertIn("inputs.repo == 'bean-fleet' || inputs.repo == 'agency'",WORKFLOW)
   self.assertIn('permission',WORKFLOW)
   self.assertNotIn('secrets.',WORKFLOW)
