@@ -9,7 +9,9 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+from fleet_profile_delta import before_fleet
 WORKFLOW = (ROOT / '.github/workflows/compliance.yml').read_text()
+WORKFLOW = before_fleet(WORKFLOW)
 
 
 class QaCallerRuntime(unittest.TestCase):

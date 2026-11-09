@@ -6,7 +6,9 @@ from pathlib import Path
 from workflow_checker_pin import before_workflow_adoption
 
 ROOT = Path(__file__).resolve().parents[1]
+from fleet_profile_delta import before_fleet
 WORKFLOW = (ROOT / '.github/workflows/compliance.yml').read_text()
+WORKFLOW = before_fleet(WORKFLOW)
 OLD_TIMEOUT = "${{ inputs.repo == 'agents' && 270 || 15 }}"
 NEW_TIMEOUT = "${{ inputs.repo == 'agents' && 270 || inputs.repo == 'bean-counter' && 50 || 15 }}"
 OLD_MANIFEST = "${{ inputs.repo == 'agency' && 'v0.7.0' || 'v0.6.6' }}"
