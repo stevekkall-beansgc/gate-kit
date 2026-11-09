@@ -161,3 +161,7 @@ shared-executor integration, and standard-library checks. The new local
 `local-validate` GitHub job runs it only for trusted `main` pushes on Gate Kit's
 existing repository-scoped Mac runner. Pull requests continue to use the hosted
 `unittest` job; the reusable compliance workflow and its caller pins are unchanged.
+
+### Bean Fleet hosted compliance
+
+The `bean-fleet` profile uses GitHub-hosted macOS 15 arm64, Python 3.14, Node 22 and full QA checks. Its vendored Commons inventory and public wheel lock are checked against reviewed digests before setup. The fleet-specific QA manifest pin is `v0.7.11`. This profile adds no private-repository token, provider credential or execution authority.

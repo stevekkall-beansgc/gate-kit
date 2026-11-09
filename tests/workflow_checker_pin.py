@@ -1,4 +1,5 @@
 """Exact, reviewed checker adoption delta for historical workflow proofs."""
+from fleet_profile_delta import before_fleet
 OLD_VERSION = "v0.4.4"
 NEW_VERSION = "v0.7.6"
 OLD_SOURCE = "69ebc139280b5c3a1d7490399c6534be72ef2b76f4569ab3427c49996d87762f"
@@ -8,6 +9,7 @@ NEW_ADAPTED = "3d035d1d969e52ce516c4cae0cf731bae3d739157c80cde96ec0f9be690103aa"
 
 
 def before_gate_runtime(workflow):
+    if "      - name: Guard fleet hosted-only profile" in workflow: workflow=before_fleet(workflow)
     for old, new in (
             ("inputs.repo == 'qa-kit' && '3.12'",
              "(inputs.repo == 'qa-kit' || inputs.repo == 'gate-kit') && '3.12'"),
