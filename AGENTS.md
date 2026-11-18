@@ -110,3 +110,11 @@ immutable release and a successful exact-candidate compliance run.
 ## Bean Fleet hosted profile
 
 `bean-fleet` uses only GitHub-hosted macOS 15 arm64 with Python 3.14, Node 22 and full manifest checks. The workflow validates the pinned vendored Commons inventory and public dependency-lock digests before installing hash-verified wheels. It uses no private checkout token or provider credentials. The QA manifest selection is `v0.8.0`; its release must exist before this workflow can be released. Vendor or dependency changes require a reviewed pin update. Pull requests use hosted runners and receive no added secrets.
+
+## Savvy prototype release cohort
+
+The `savvy-proto` caller selects QA Kit `v0.9.0`, which registers its owned
+Python unit/deployment checks and isolated Rails/PostgreSQL integration command.
+It uses the hosted runner; the existing workflow/checker and other cohorts remain
+unchanged. Frontend, browser, architecture and dbt evidence remain separate Savvy
+workflows and are required before deployment.

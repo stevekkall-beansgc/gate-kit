@@ -165,3 +165,12 @@ existing repository-scoped Mac runner. Pull requests continue to use the hosted
 ### Bean Fleet hosted compliance
 
 The `bean-fleet` profile uses GitHub-hosted macOS 15 arm64, Python 3.14, Node 22 and full QA checks. Its vendored Commons inventory and public wheel lock are checked against reviewed digests before setup. The fleet-specific QA manifest pin is `v0.8.0`. This profile adds no private-repository token, provider credential or execution authority.
+
+## Savvy prototype manifest cohort
+
+The `savvy-proto` caller selects the released QA Kit `v0.9.0` manifest for its
+Python unit/deployment checks and isolated Rails/PostgreSQL integration command.
+The new selection changes only that caller; all existing runtime, checker, fixture,
+permission and manifest selections remain pinned as before. Savvy separately
+requires its application/browser/reporting and architecture workflows before
+deployment. The demo uses synthetic records and mocked integrations.
